@@ -1,11 +1,12 @@
 import json
 from dataclasses import asdict
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session, col, select
 
+from app.compat import UTC
 from app.config import get_settings
 from app.db import get_session
 from app.models import (

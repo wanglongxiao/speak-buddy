@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import struct
 import wave
@@ -7,7 +9,7 @@ from pathlib import Path
 QUIET_RMS = 0.035
 
 
-@dataclass(slots=True)
+@dataclass
 class LoudResult:
     rms: float
     duration_ms: int

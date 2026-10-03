@@ -7,7 +7,7 @@ import httpx
 from app.config import get_settings
 
 
-@dataclass(slots=True)
+@dataclass
 class ASRResult:
     transcript: str
     confidence: float

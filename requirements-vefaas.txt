@@ -3,6 +3,7 @@ uvicorn[standard]==0.34.2
 jinja2==3.1.6
 sqlmodel==0.0.24
 pydantic-settings==2.9.1
+eval-type-backport==0.4.0
 python-multipart==0.0.20
 httpx==0.28.1
 openai==1.82.0

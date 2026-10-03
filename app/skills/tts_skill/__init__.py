@@ -4,8 +4,10 @@ import json
 from uuid import uuid4
 
 import httpx
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import ROOT, get_settings
+from app.skills.tos_skill import store_audio
 
 SPEED_RATES = {"slow": -15, "normal": 0, "fast": 15}
 VERIFIED_EN_US_VOICES = {"en_female_skye_emo_v2_mars_bigtts"}
@@ -63,9 +65,13 @@ async def synthesize(text: str, speed: str = "normal", voice: str = "") -> str:
                     if encoded:
                         chunks.extend(base64.b64decode(encoded))
         if chunks:
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_bytes(chunks)
-            return f"/audio/{output.name}"
+            stored = await run_in_threadpool(
+                store_audio,
+                bytes(chunks),
+                output.name,
+                "audio/mpeg",
+            )
+            return stored.url
     except (httpx.HTTPError, ValueError, json.JSONDecodeError):
         return ""
     return ""

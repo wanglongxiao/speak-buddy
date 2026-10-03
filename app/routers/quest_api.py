@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session, col, select
 
+from app.compat import UTC
 from app.db import get_session
 from app.models import PracticeSession, Turn
 from app.routers.api import award_badges, current_user

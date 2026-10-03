@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import asyncio
 import json
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
+from app.compat import UTC
 from app.models import (
     DailyPracticeContent,
     PracticeSession,

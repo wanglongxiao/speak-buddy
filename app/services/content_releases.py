@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import json
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlmodel import Session, col, select
 
+from app.compat import UTC
 from app.models import DailyPracticeContent, PracticeContentRelease, User
 from app.models.schemas import DailyPracticePayload
 from app.services.content_generation import generate_daily_payload

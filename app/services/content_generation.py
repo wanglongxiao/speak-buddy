@@ -116,7 +116,7 @@ async def generate_daily_payload(
     )
     topics: list[DailyTopic] = []
     lines: list[DailyReadAloud] = []
-    for difficulty, (payload, _) in zip(levels, results, strict=True):
+    for difficulty, (payload, _) in zip(levels, results):  # noqa: B905 - Python 3.9
         topics.extend(
             DailyTopic(
                 title=item.title,

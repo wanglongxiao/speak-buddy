@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 
 
-@dataclass(slots=True)
+@dataclass
 class PronunciationResult:
     score: int
     word_match: float

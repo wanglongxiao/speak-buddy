@@ -1,7 +1,11 @@
-from datetime import UTC, datetime
+from __future__ import annotations
+
 from datetime import date as Date
+from datetime import datetime
 
 from sqlmodel import Field, SQLModel
+
+from app.compat import UTC
 
 
 def utcnow() -> datetime:

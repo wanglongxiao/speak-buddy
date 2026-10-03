@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-@dataclass(slots=True)
+@dataclass
 class DifficultyAdvice:
     difficulty: str
     speed: str
@@ -10,7 +10,7 @@ class DifficultyAdvice:
     frustration_recovery: bool
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class DifficultyProfile:
     code: str
     min_words: int

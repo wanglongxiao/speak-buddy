@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 TITLES = [
@@ -10,7 +12,7 @@ TITLES = [
 ]
 
 
-@dataclass(slots=True)
+@dataclass
 class Reward:
     xp: int
     title: str

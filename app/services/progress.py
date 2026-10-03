@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import json
 from collections import defaultdict
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlmodel import Session, col, select
 
+from app.compat import UTC
 from app.models import LoudMeter, PracticeSession, TaskEvaluation, Turn, User
 from app.skills.gamify_skill import title_for
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
@@ -5,7 +7,7 @@ from uuid import uuid4
 from app.config import ROOT, get_settings
 
 
-@dataclass(slots=True)
+@dataclass
 class StoredAudio:
     key: str
     url: str

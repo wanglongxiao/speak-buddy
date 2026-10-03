@@ -61,6 +61,32 @@ function recordableState(target, context) {
 }
 window.speakBuddyPage = { recordableState, registerPageRecorder, scrollToCurrentQuestion };
 
+window.homeCountdown = (topicId) => ({
+  value: 5,
+  label: "5",
+  interval: null,
+  redirectTimer: null,
+  init() {
+    this.interval = window.setInterval(() => {
+      if (this.value > 1) {
+        this.value -= 1;
+        this.label = String(this.value);
+        return;
+      }
+      window.clearInterval(this.interval);
+      this.interval = null;
+      this.label = "START";
+      this.redirectTimer = window.setTimeout(() => {
+        window.location.assign(`/practice?topic_id=${topicId}&autoplay=1`);
+      }, 700);
+    }, 1000);
+  },
+  destroy() {
+    if (this.interval) window.clearInterval(this.interval);
+    if (this.redirectTimer) window.clearTimeout(this.redirectTimer);
+  }
+});
+
 window.warmupApp = () => ({
   ...recordableState(
     I.microphone_error,

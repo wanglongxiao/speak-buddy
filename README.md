@@ -46,7 +46,7 @@ corrections.
 
 | Page | Purpose |
 | --- | --- |
-| **Home** (`/`) | Shows today's practice, XP, streak, speaking time, and a quick entry into the recommended topic. |
+| **Home** (`/`) | Shows today's practice, XP, streak, and speaking time. A 5-to-1 countdown automatically opens the recommended topic. |
 | **Read Aloud** (`/warmup`) | Provides daily sentences for pronunciation, fluency, and confidence practice. Results are grouped so children can practise naturally before receiving feedback. |
 | **Topics** (`/topics`) | Lists AI-generated conversation topics and supports creating a custom topic by voice. |
 | **Topic Practice** (`/practice`) | Opens directly on the selected topic without a greeting or warm-up score. Each completed topic receives a five-dimension evaluation. |
@@ -76,8 +76,9 @@ committed to the repository.
 
 ## Speaking Flow
 
-1. The learner selects a topic or creates one by speaking.
-2. The selected topic opens immediately with its first question.
+1. Opening Home starts a 5-to-1 countdown and then opens the recommended topic.
+   Learners can also select or create a topic themselves.
+2. The selected topic opens immediately and Buddy reads its first question.
 3. The browser records the learner's topic answer and uploads the audio.
 4. TOS stores the recording and Seed Speech ASR transcribes it.
 5. DeepSeek on ModelArk returns structured coaching with praise, one focused

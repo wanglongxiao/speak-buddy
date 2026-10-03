@@ -12,12 +12,19 @@
   <div class="stat"><strong>{{ loud_seconds }}s</strong><span>{{ t.loud_today }}</span></div>
 </section>
 
-<section class="card stack">
-  <div>
-    <span class="label">{{ t.todays_practice }} · {{ daily_content.content_date.strftime("%b %d") }}</span>
-    <h2>{{ title }}</h2>
+<section class="card stack" x-data="homeCountdown({{ first_topic_id }})">
+  <div class="home-practice-heading">
+    <div>
+      <span class="label">{{ t.todays_practice }} · {{ daily_content.content_date.strftime("%b %d") }}</span>
+      <h2>{{ title }}</h2>
+    </div>
+    <div class="home-countdown" :class="{started: label === 'START'}"
+      role="timer" aria-live="polite">
+      <strong x-text="label">5</strong>
+    </div>
   </div>
-  <a class="btn btn-primary btn-wide" href="/practice?topic_id={{ first_topic_id }}">
+  <a class="btn btn-primary btn-wide"
+    href="/practice?topic_id={{ first_topic_id }}&autoplay=1">
     <i data-lucide="mic-2"></i>
     {{ t.start_quest }}
   </a>

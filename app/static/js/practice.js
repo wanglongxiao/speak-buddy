@@ -24,6 +24,9 @@ window.practiceApp = (topicId, questions, speed) => ({
   },
   init() {
     registerPageRecorder(this);
+    if (new URLSearchParams(window.location.search).get("autoplay") === "1") {
+      this.speak(this.question);
+    }
   },
   async start() {
     if (this.busy || this.complete) return false;

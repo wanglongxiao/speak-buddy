@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timedelta
 
 from sqlmodel import Session, col, select
 
-from app.compat import UTC
+from app.compat import HONG_KONG, UTC
 from app.models import LoudMeter, PracticeSession, TaskEvaluation, Turn, User
 from app.skills.gamify_skill import title_for
 
@@ -63,14 +63,23 @@ def _date_range(start: date, days: int) -> list[date]:
     return [start + timedelta(days=offset) for offset in range(days)]
 
 
+def _local_time(value: datetime) -> datetime:
+    aware = value if value.tzinfo else value.replace(tzinfo=UTC)
+    return aware.astimezone(HONG_KONG)
+
+
 def build_progress(
     session: Session, user: User, period: str, lang: str
 ) -> dict[str, object]:
     period = period if period in PERIOD_DAYS else "week"
     days = PERIOD_DAYS[period]
-    today = date.today()
+    today = datetime.now(HONG_KONG).date()
     start_date = today - timedelta(days=days - 1)
-    start_at = datetime.combine(start_date, time.min, tzinfo=UTC)
+    start_at = datetime.combine(
+        start_date,
+        time.min,
+        tzinfo=HONG_KONG,
+    ).astimezone(UTC)
 
     sessions = session.exec(
         select(PracticeSession).where(
@@ -148,9 +157,9 @@ def build_progress(
     scores = [score for _, score in scored]
     by_date: dict[date, list[int]] = defaultdict(list)
     for created_at, score in scored:
-        by_date[created_at.date()].append(score)
+        by_date[_local_time(created_at).date()].append(score)
     if period == "day":
-        labels = [created_at.strftime("%H:%M") for created_at, _ in scored]
+        labels = [_local_time(created_at).strftime("%H:%M") for created_at, _ in scored]
         values = scores
     else:
         dates = _date_range(start_date, days)
@@ -159,9 +168,9 @@ def build_progress(
             round(sum(by_date[item]) / len(by_date[item])) if by_date[item] else None
             for item in dates
         ]
-    active_dates = {item.started_at.date() for item in sessions}
+    active_dates = {_local_time(item.started_at).date() for item in sessions}
     active_dates.update(item.date for item in loud if item.total_seconds)
-    active_dates.update(item.created_at.date() for item in evaluations)
+    active_dates.update(_local_time(item.created_at).date() for item in evaluations)
     average = round(sum(scores) / len(scores)) if scores else 0
     task_count = len(evaluations) + len(legacy_turns)
     return {

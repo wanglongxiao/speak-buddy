@@ -35,6 +35,39 @@
   padding: 12px 14px;
 }
 
+.home-practice-heading {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 88px;
+}
+
+.home-countdown {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--gold);
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  box-shadow: 0 5px 0 #e9ad38;
+  display: flex;
+  justify-content: center;
+  width: 88px;
+}
+
+.home-countdown strong {
+  font-size: 30px;
+  line-height: 1;
+  text-align: center;
+}
+
+.home-countdown.started strong {
+  font-size: 17px;
+}
+
+.home-countdown strong:not(:empty) {
+  overflow-wrap: anywhere;
+}
+
 .topic-grid,
 .trophy-grid {
   display: grid;

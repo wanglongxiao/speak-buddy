@@ -19,8 +19,23 @@ from app.services.prompts import load_prompt
 from app.skills.difficulty_skill import profile_for
 
 
-def _fallback(user: User, variant: int) -> DailyPracticePayload:
-    return fallback_daily_payload(date.today(), user.id or 0, variant)
+def _fallback(
+    user: User,
+    variant: int,
+    avoid: dict[str, list[str]],
+) -> DailyPracticePayload:
+    recent = avoid.get("sentences", [])
+    total_lines = sum(line_count for _, line_count in PRACTICE_COUNTS.values())
+    previous = recent[-total_lines:]
+    for shift in range(total_lines + 1):
+        candidate = fallback_daily_payload(
+            date.today(),
+            user.id or 0,
+            variant + shift,
+        )
+        if [item.text for item in candidate.read_aloud] != previous:
+            return candidate
+    return candidate
 
 
 def _level_from_fallback(
@@ -94,7 +109,7 @@ async def generate_daily_payload(
 ) -> tuple[DailyPracticePayload, str]:
     settings = get_settings()
     variant = sum(ord(char) for char in nonce)
-    fallback = _fallback(user, variant)
+    fallback = _fallback(user, variant, avoid)
     if not settings.ai_enabled:
         return fallback, "fallback"
     client = AsyncOpenAI(

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ t.parent_title }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="hero">
+    <h1>{{ t.parent_title }}</h1>
+    <p>{{ t.parent_note }}</p>
+  </div>
+  <nav class="segmented no-print" aria-label="{{ t.time_period }}">
+    {% for value in ["day", "week", "month"] %}
+    <a href="/progress/parent?period={{ value }}&share={{ share_token }}"
+      class="{{ 'active' if period == value else '' }}">
+      {{ t["period_" + value] }}
+    </a>
+    {% endfor %}
+  </nav>
+  <div class="voice-evaluation">
+    <h2>{{ user.nickname }}</h2>
+    <p>{{ evaluation }}</p>
+  </div>
+  <div>
+    <span class="label">{{ t.period_overview }}</span>
+    <div class="stats dashboard-stats">
+      <div class="stat"><strong>{{ completed_quests }}</strong><span>{{ t.quests }}</span></div>
+      <div class="stat"><strong>{{ average_score }}</strong><span>{{ t.average }}</span></div>
+      <div class="stat"><strong>{{ loud_seconds_period }}s</strong><span>{{ t.speaking_time }}</span></div>
+      <div class="stat"><strong>{{ active_days }}</strong><span>{{ t.active_days }}</span></div>
+      <div class="stat"><strong>{{ words_spoken }}</strong><span>{{ t.words_spoken }}</span></div>
+      <div class="stat"><strong>{{ turn_count }}</strong><span>{{ t.tasks_completed }}</span></div>
+    </div>
+  </div>
+  {% if rubric_scores %}
+  <div>
+    <span class="label">{{ t.score_breakdown }}</span>
+    <div class="rubric-grid">
+      {% for key in ["fluency", "response_length", "word_accuracy", "pronunciation", "relevance"] %}
+      <div><strong>{{ rubric_scores[key] }}</strong><span>{{ t[key] }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  <div class="card">
+    <span class="label">{{ t.encouragement }}</span>
+    <p>{{ highlight }}</p>
+  </div>
+  <div class="card text-center">
+    <img src="{{ qr_data }}" alt="{{ t.share_parent }}" width="160" height="160" class="mx-auto">
+  </div>
+  <button class="btn btn-secondary btn-wide no-print" type="button" onclick="window.print()">
+    <i data-lucide="printer"></i>{{ t.print }}
+  </button>
+</section>
+{% endblock %}

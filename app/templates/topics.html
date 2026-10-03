@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ t.topics_title }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section class="stack" x-data="topicCreator()">
+  <div class="hero">
+    <h1>{{ t.topics_title }}</h1>
+  </div>
+  {% if content_updated %}
+  <p class="note">{{ t.practice_updated }}</p>
+  {% elif content_pending %}
+  <p class="note">{{ t.practice_update_pending }}</p>
+  {% endif %}
+
+  <div class="card stack">
+    <h2>{{ t.create_topic }}</h2>
+    <p>{{ t.topic_prompt }}</p>
+    <div class="meter"><span :style="`width:${level}%`"></span></div>
+    <p class="text-center font-extrabold" x-text="status"></p>
+    <div class="note" x-show="topic" x-cloak>
+      <strong x-text="topic?.title"></strong>
+      <p x-text="topic?.starter_question"></p>
+      <a class="btn btn-primary btn-wide" :href="`/practice?topic_id=${topic?.id || 1}&ready=1`">
+        {{ t.start_quest }}
+      </a>
+    </div>
+  </div>
+
+  <div class="topic-grid">
+    {% for topic in topics %}
+    <a class="card topic-card no-underline text-inherit" href="/practice?topic_id={{ topic.id }}&ready=1">
+      <span class="label">{{ t.difficulty }} · {{ topic.difficulty }}</span>
+      <h2>{{ topic.title }}</h2>
+      <p>{{ topic.starter_question }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

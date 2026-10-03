@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ t.account }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="hero">
+    <span class="label">{{ t.current_user }}</span>
+    <h1>{{ user.nickname }}</h1>
+    <p>{{ "@" + user.username if user.username else t.guest_account }}</p>
+  </div>
+  <a class="btn btn-secondary btn-wide" href="/settings">
+    <i data-lucide="settings-2"></i>{{ t.settings_title }}
+  </a>
+
+  {% if user.username %}
+  <form class="card stack" method="post" action="/account/logout">
+    <p>{{ t.account_private_note }}</p>
+    <button class="btn btn-secondary btn-wide" type="submit">
+      <i data-lucide="log-out"></i>{{ t.sign_out }}
+    </button>
+  </form>
+  {% else %}
+  <div class="card stack" x-data="{ mode: 'login' }">
+    <div class="segmented" role="tablist">
+      <button type="button" :class="{active: mode === 'login'}" @click="mode = 'login'">
+        {{ t.sign_in }}
+      </button>
+      <button type="button" :class="{active: mode === 'register'}" @click="mode = 'register'">
+        {{ t.create_account }}
+      </button>
+    </div>
+    {% if error %}
+    <p class="note">{{ t["account_error_" + error] }}</p>
+    {% endif %}
+    <form class="stack" method="post" action="/account/login" x-show="mode === 'login'">
+      <label>
+        <span class="label">{{ t.username }}</span>
+        <input class="field" name="username" autocomplete="username" required>
+      </label>
+      <label>
+        <span class="label">{{ t.password }}</span>
+        <input class="field" name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="btn btn-primary btn-wide" type="submit">
+        <i data-lucide="log-in"></i>{{ t.sign_in }}
+      </button>
+    </form>
+    <form class="stack" method="post" action="/account/register" x-show="mode === 'register'" x-cloak>
+      <label>
+        <span class="label">{{ t.username }}</span>
+        <input class="field" name="username" minlength="3" maxlength="30"
+          pattern="[A-Za-z0-9_-]+" autocomplete="username" required>
+      </label>
+      <label>
+        <span class="label">{{ t.password }}</span>
+        <input class="field" name="password" type="password" minlength="6"
+          autocomplete="new-password" required>
+      </label>
+      <label>
+        <span class="label">{{ t.nickname }}</span>
+        <input class="field" name="nickname" maxlength="30" required>
+      </label>
+      <button class="btn btn-primary btn-wide" type="submit">
+        <i data-lucide="user-plus"></i>{{ t.create_account }}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

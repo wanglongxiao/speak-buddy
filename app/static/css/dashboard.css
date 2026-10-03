@@ -1,0 +1,99 @@
+.icon-link {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.icon-link svg {
+  height: 22px;
+  width: 22px;
+}
+
+.field {
+  background: var(--white);
+  border: 2px solid #dde1df;
+  border-radius: 10px;
+  display: block;
+  min-height: 48px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.field:focus {
+  border-color: var(--mint-dark);
+  outline: 3px solid rgba(46, 128, 104, 0.15);
+}
+
+.segmented {
+  background: #e9ece8;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  padding: 4px;
+}
+
+.segmented a,
+.segmented button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+  min-height: 42px;
+  padding: 8px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.segmented .active {
+  background: var(--white);
+  box-shadow: 0 2px 8px rgba(69, 55, 44, 0.1);
+  color: var(--ink);
+}
+
+.voice-evaluation {
+  background: var(--mint);
+  border-left: 6px solid var(--mint-dark);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+
+.voice-evaluation h2,
+.voice-evaluation p {
+  color: var(--ink);
+  margin-bottom: 0;
+}
+
+.dashboard-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.dashboard-stats .stat {
+  min-width: 0;
+}
+
+.dashboard-stats .stat span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.stack,
+.stack > *,
+.chart-card {
+  min-width: 0;
+}
+
+#progress-chart {
+  max-width: 100%;
+}

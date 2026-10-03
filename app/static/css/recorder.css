@@ -1,0 +1,89 @@
+.global-recorder {
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  left: 50%;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 60;
+}
+
+.global-record-btn {
+  align-items: center;
+  background: var(--coral);
+  border: 8px solid var(--cream);
+  border-radius: 50%;
+  box-shadow: 0 8px 0 var(--coral-dark), 0 13px 28px rgba(69, 55, 44, 0.2);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  height: 128px;
+  justify-content: center;
+  touch-action: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  width: 128px;
+}
+
+.global-record-btn svg {
+  height: 34px;
+  pointer-events: none;
+  width: 34px;
+}
+
+.global-record-btn.recording {
+  animation: record 0.9s infinite;
+  background: var(--gold);
+  box-shadow: 0 4px 0 #d7ae3f, 0 10px 24px rgba(69, 55, 44, 0.2);
+  transform: translateY(4px);
+}
+
+.global-record-btn:focus-visible {
+  outline: 4px solid var(--mint-dark);
+  outline-offset: 3px;
+}
+
+.global-record-feedback {
+  background: var(--ink);
+  border-radius: 12px;
+  bottom: 138px;
+  color: var(--white);
+  left: 50%;
+  min-width: 210px;
+  padding: 9px 12px;
+  position: absolute;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.global-record-feedback::after {
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--ink);
+  bottom: -8px;
+  content: "";
+  left: calc(50% - 8px);
+  position: absolute;
+}
+
+.global-record-feedback strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.global-record-feedback .meter {
+  height: 7px;
+}
+
+.nav-record-space {
+  min-width: 128px;
+}
+
+@media (min-width: 768px) {
+  .global-record-btn {
+    height: 104px;
+    width: 104px;
+  }
+
+  .global-record-feedback {
+    bottom: 114px;
+  }
+}

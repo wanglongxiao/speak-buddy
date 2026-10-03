@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ t.shoutout_title }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section x-data="warmupApp()" class="stack read-aloud-page">
+  <div class="hero">
+    <p class="label">{{ t.shoutout_title }}</p>
+    <h1 x-text="questMode ? '{{ t.warmup_title }}' : '{{ t.shoutout_title }}'"></h1>
+    <p x-text="questMode ? '{{ t.warmup_subtitle }}' : '{{ t.shoutout_subtitle }}'"></p>
+  </div>
+
+  <div class="card stack">
+    <span class="label" x-text="(index + 1) + ' / ' + lines.length"></span>
+    <h2 x-text="lines[index]"></h2>
+    <button class="btn btn-secondary" type="button" @click="speak(lines[index])">
+      <i data-lucide="volume-2"></i>{{ t.listen }}
+    </button>
+    <div class="meter"><span :style="`width:${level}%`"></span></div>
+    <p class="text-center font-extrabold" x-text="status"></p>
+    <p class="note" x-show="quiet">{{ t.a_little_louder }}</p>
+  </div>
+
+  <div class="card flex items-center gap-3" x-show="busy">
+    <span class="spinner"></span>
+    <strong>{{ t.scoring_now }}</strong>
+  </div>
+
+  <div class="card task-feedback compact-score stack" x-show="evaluation" x-cloak>
+    <div class="score-heading">
+      <strong class="score-number" x-text="evaluation?.overall_score"></strong>
+      <div>
+        <span class="label" x-text="questMode ? window.i18n.task_score : window.i18n.group_score"></span>
+        <p x-text="evaluation?.feedback"></p>
+      </div>
+    </div>
+    <div class="rubric-grid">
+      {% for key in ["fluency", "response_length", "word_accuracy", "pronunciation", "relevance"] %}
+      <div><strong x-text="evaluation?.{{ key }}"></strong><span>{{ t[key] }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button class="floating-next" type="button" x-show="evaluation" x-cloak
+    @click="nextLine()" title="{{ t.next }}" aria-label="{{ t.next }}">
+    <i data-lucide="arrow-right"></i>
+  </button>
+
+  <div class="card" x-show="!questMode">
+    <span class="label">{{ t.daily_shouter_progress }}</span>
+    <div class="meter"><span :style="`width:${Math.min(100, count / lines.length * 100)}%`"></span></div>
+    <p><strong x-text="count"></strong> / <span x-text="lines.length"></span></p>
+  </div>
+
+  <a x-show="completed" class="btn btn-primary btn-wide"
+    :href="questMode ? '/practice?topic_id={{ topic_id }}&ready=1' : '/progress'">
+    <i data-lucide="arrow-right"></i>{{ t.next }}
+  </a>
+</section>
+{% endblock %}

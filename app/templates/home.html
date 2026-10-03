@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <p class="label">{{ t.tagline }}</p>
+  <h1>{{ t.home_hello }}</h1>
+  <p>{{ t.home_subtitle }}</p>
+</section>
+
+<section class="stats" aria-label="Daily progress">
+  <div class="stat"><strong>{{ user.total_xp }}</strong><span>{{ t.xp }}</span></div>
+  <div class="stat"><strong>{{ streak.current_days }}</strong><span>{{ t.streak }}</span></div>
+  <div class="stat"><strong>{{ loud_seconds }}s</strong><span>{{ t.loud_today }}</span></div>
+</section>
+
+<section class="card stack">
+  <div>
+    <span class="label">{{ t.todays_practice }} · {{ daily_content.content_date.strftime("%b %d") }}</span>
+    <h2>{{ title }}</h2>
+  </div>
+  <a class="btn btn-primary btn-wide" href="/practice?topic_id={{ first_topic_id }}">
+    <i data-lucide="mic-2"></i>
+    {{ t.start_quest }}
+  </a>
+  <a class="btn btn-secondary btn-wide" href="/warmup">
+    <i data-lucide="audio-lines"></i>
+    {{ t.shoutout_title }}
+  </a>
+</section>
+{% endblock %}

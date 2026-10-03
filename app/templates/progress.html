@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ t.progress_title }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="hero">
+    <h1>{{ t.progress_title }}</h1>
+    <p>{{ title }} · {{ user.total_xp }} {{ t.xp }}</p>
+  </div>
+  <nav class="segmented" aria-label="{{ t.time_period }}">
+    {% for value in ["day", "week", "month"] %}
+    <a href="/progress?period={{ value }}" class="{{ 'active' if period == value else '' }}">
+      {{ t["period_" + value] }}
+    </a>
+    {% endfor %}
+  </nav>
+  <div class="voice-evaluation">
+    <span class="label">{{ t.speaking_evaluation }}</span>
+    <h2>{{ evaluation }}</h2>
+  </div>
+  <div class="card chart-card">
+    <canvas id="progress-chart" height="180" aria-label="{{ t.progress_title }}"></canvas>
+  </div>
+  <div>
+    <span class="label">{{ t.period_overview }}</span>
+    <div class="stats dashboard-stats">
+      <div class="stat"><strong>{{ completed_quests }}</strong><span>{{ t.quests }}</span></div>
+      <div class="stat"><strong>{{ average_score }}</strong><span>{{ t.average }}</span></div>
+      <div class="stat"><strong>{{ loud_seconds_period }}s</strong><span>{{ t.speaking_time }}</span></div>
+      <div class="stat"><strong>{{ active_days }}</strong><span>{{ t.active_days }}</span></div>
+      <div class="stat"><strong>{{ words_spoken }}</strong><span>{{ t.words_spoken }}</span></div>
+      <div class="stat"><strong>{{ turn_count }}</strong><span>{{ t.tasks_completed }}</span></div>
+    </div>
+  </div>
+  {% if rubric_scores %}
+  <div>
+    <span class="label">{{ t.score_breakdown }}</span>
+    <div class="rubric-grid">
+      {% for key in ["fluency", "response_length", "word_accuracy", "pronunciation", "relevance"] %}
+      <div><strong>{{ rubric_scores[key] }}</strong><span>{{ t[key] }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  <a class="btn btn-secondary btn-wide" href="/progress/parent?period={{ period }}">
+    <i data-lucide="users"></i>{{ t.parent_view }}
+  </a>
+  <a class="btn btn-secondary btn-wide" href="/trophy">
+    <i data-lucide="trophy"></i>{{ t.nav_trophy }}
+  </a>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const canvas = document.getElementById("progress-chart");
+    new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: {{ chart_labels|tojson }},
+        datasets: [{
+          data: {{ chart_values|tojson }},
+          borderColor: "#E66F66",
+          backgroundColor: "rgba(168,230,207,.35)",
+          fill: true,
+          tension: .35
+        }]
+      },
+      options: {plugins: {legend: {display: false}}, scales: {y: {min: 0, max: 100}}}
+    });
+  });
+</script>
+{% endblock %}

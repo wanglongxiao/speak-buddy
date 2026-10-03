@@ -1,0 +1,62 @@
+.task-feedback {
+  border-top: 3px solid var(--gold);
+}
+
+.score-heading {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 50px minmax(0, 1fr);
+}
+
+.score-heading p {
+  margin: 0;
+}
+
+.score-number {
+  align-items: center;
+  background: var(--gold);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  display: flex;
+  font-size: 20px;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.rubric-grid {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.rubric-grid > div {
+  background: #f2f5f3;
+  border-radius: 6px;
+  min-width: 0;
+  padding: 5px 2px;
+  text-align: center;
+}
+
+.rubric-grid strong,
+.rubric-grid span {
+  display: block;
+}
+
+.rubric-grid strong {
+  font-size: 15px;
+}
+
+.rubric-grid span {
+  color: var(--muted);
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 420px) {
+  .rubric-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

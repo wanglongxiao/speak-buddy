@@ -1,0 +1,1 @@
+"""SpeakBuddy application package."""

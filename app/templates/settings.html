@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ t.settings_title }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="hero"><h1>{{ t.settings_title }}</h1></div>
+  <form class="card stack" method="post" action="/settings">
+    <label>
+      <span class="label">{{ t.nickname }}</span>
+      <input class="field" name="nickname"
+        value="{{ user.nickname }}" maxlength="30">
+    </label>
+    <label>
+      <span class="label">{{ t.language }}</span>
+      <select class="field" name="lang">
+        <option value="en" {{ "selected" if user.lang == "en" else "" }}>English</option>
+        <option value="zh" {{ "selected" if user.lang == "zh" else "" }}>中文</option>
+      </select>
+    </label>
+    <label>
+      <span class="label">{{ t.difficulty }}</span>
+      <select class="field" name="difficulty">
+        {% for value in ["easy", "normal", "hard", "expert"] %}
+        <option value="{{ value }}" {{ "selected" if user.default_difficulty == value else "" }}>
+          {{ t["difficulty_" + value] }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span class="label">{{ t.speed }}</span>
+      <select class="field" name="speed">
+        {% for value in ["slow", "normal", "fast"] %}
+        <option value="{{ value }}" {{ "selected" if user.default_speed == value else "" }}>{{ value|title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-secondary" type="button"
+      onclick="window.speakBuddy.speak('Your brave voice gets stronger every time you use it.', '{{ user.default_speed }}')">
+      <i data-lucide="volume-2"></i>{{ t.preview_voice }}
+    </button>
+    <button class="btn btn-primary" type="submit">
+      <i data-lucide="save"></i>{{ t.save }}
+    </button>
+  </form>
+  <a class="btn btn-ghost btn-wide" href="/account">
+    <i data-lucide="users"></i>{{ t.manage_account }}
+  </a>
+</section>
+{% endblock %}

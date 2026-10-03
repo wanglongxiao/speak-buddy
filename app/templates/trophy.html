@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ t.trophy_title }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="hero"><h1>{{ t.trophy_title }}</h1></div>
+  <div class="trophy-grid">
+    {% for badge in badges %}
+    <article class="card trophy {{ '' if badge.code in earned else 'locked' }}">
+      <div class="badge-icon">{{ badge.name_en[0] }}</div>
+      <span class="label">{{ t.earned if badge.code in earned else t.locked }}</span>
+      <h2>{{ badge.name_zh if lang == "zh" else badge.name_en }}</h2>
+      <p>{{ badge.desc_zh if lang == "zh" else badge.desc_en }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

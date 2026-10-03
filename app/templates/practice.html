@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ t.practice_title }} · {{ t.brand }}{% endblock %}
+{% block content %}
+<section
+  x-data='practiceApp({{ topic.id }}, {{ topic_questions|tojson }}, {{ user.default_speed|tojson }})'
+  class="stack practice-page"
+>
+  <div class="hero">
+    <div class="flex justify-between items-center">
+      <span class="label">{{ topic.title }}</span>
+      <strong><span x-text="turn"></span> / <span x-text="total"></span></strong>
+    </div>
+    <div class="meter"><span :style="`width:${turn / total * 100}%`"></span></div>
+  </div>
+
+  <div class="card stack" data-current-question x-show="!complete">
+    <span class="label">{{ t.buddy_asks }}</span>
+    <h2 x-text="question"></h2>
+    <button class="btn btn-secondary" type="button" @click="speak(question)">
+      <i data-lucide="volume-2"></i>{{ t.listen }}
+    </button>
+    <div class="meter"><span :style="`width:${level}%`"></span></div>
+  </div>
+
+  <div class="card flex items-center gap-3" x-show="busy">
+    <span class="spinner"></span>
+    <strong>{{ t.thinking }}</strong>
+  </div>
+
+  <div class="card stack compact-result" x-show="result && !complete" x-cloak>
+    <div>
+      <span class="label">{{ t.your_words }}</span>
+      <p class="compact-copy" x-text="transcript"></p>
+    </div>
+    <h2 x-text="result?.praise"></h2>
+    <div x-show="result?.tiny_tweak">
+      <span class="label">{{ t.tiny_tweak_label }}</span>
+      <p class="note compact-copy" x-text="result?.tiny_tweak"></p>
+    </div>
+    <div>
+      <span class="label">{{ t.say_with_me }}</span>
+      <p class="text-xl font-black" x-text="result?.ideal_rephrase"></p>
+      <button class="btn btn-secondary btn-wide" type="button" @click="echo()">
+        <i data-lucide="audio-lines"></i>{{ t.say_with_me }}
+      </button>
+    </div>
+    <div>
+      <span class="label">{{ t.new_words }}</span>
+      <div class="flex flex-wrap gap-2">
+        <template x-for="word in result?.suggested_new_words || []" :key="word">
+          <button
+            class="btn btn-ghost bg-[#FFF3BF]"
+            type="button"
+            @click="speak(word)"
+            x-text="word"
+          ></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="card stack text-center" x-show="complete" x-cloak>
+    <h1>{{ t.quest_complete }}</h1>
+    <div class="task-feedback compact-score" x-show="finalEvaluation">
+      <div class="score-heading">
+        <strong class="score-number" x-text="finalEvaluation?.overall_score"></strong>
+        <p x-text="finalEvaluation?.feedback"></p>
+      </div>
+      <div class="rubric-grid">
+        {% for key in ["fluency", "response_length", "word_accuracy", "pronunciation", "relevance"] %}
+        <div><strong x-text="finalEvaluation?.{{ key }}"></strong><span>{{ t[key] }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+    <p><strong x-text="xp"></strong> {{ t.xp }}</p>
+    <a class="btn btn-primary btn-wide" href="/progress">{{ t.nav_progress }}</a>
+  </div>
+
+  <button class="floating-next" type="button" x-show="result && !complete"
+    x-cloak @click="next()" title="{{ t.next }}" aria-label="{{ t.next }}">
+    <i data-lucide="arrow-right"></i>
+  </button>
+
+  <div
+    data-conversation-latest
+    x-effect="result && $nextTick(() => $el.scrollIntoView({ behavior: 'smooth', block: 'end' }))"
+    aria-hidden="true"
+  ></div>
+  <button class="btn btn-ghost btn-wide" type="button" @click="endEarly()">
+    {{ t.end_early }}
+  </button>
+</section>
+{% endblock %}

@@ -27,13 +27,8 @@ window.warmupApp = () => ({
   completed: false,
   awaitingNext: false,
   questMode: new URLSearchParams(location.search).has("quest"),
-  warmupLines: [
-    "Hi Buddy, let's practice English together."
-  ],
   get lines() {
-    return this.questMode
-      ? this.warmupLines
-      : (window.dailyReadAloud?.length ? window.dailyReadAloud : I.read_aloud_lines);
+    return window.dailyReadAloud?.length ? window.dailyReadAloud : I.read_aloud_lines;
   },
   init() {
     window.pageRecorder = {

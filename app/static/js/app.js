@@ -66,9 +66,7 @@ window.warmupApp = () => ({
     I.microphone_error,
     () => new URLSearchParams(location.search).has("quest") ? "warmup" : "shoutout"
   ),
-  lines: [
-    "Hi Buddy, let's practice English together."
-  ],
+  lines: [],
   readAloudLines: I.read_aloud_lines_by_difficulty?.[window.userDifficulty]
     || I.read_aloud_lines,
   index: 0,
@@ -78,7 +76,7 @@ window.warmupApp = () => ({
   questMode: new URLSearchParams(location.search).has("quest"),
   init() {
     registerPageRecorder(this);
-    if (!this.questMode) this.lines = this.readAloudLines;
+    this.lines = this.readAloudLines;
     speak(this.lines[0]);
   },
   speak,

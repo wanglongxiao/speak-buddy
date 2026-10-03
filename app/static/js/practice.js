@@ -3,7 +3,6 @@ const { postJSON, speak } = window.speakBuddy;
 const { recordableState, registerPageRecorder, scrollToCurrentQuestion } =
   window.speakBuddyPage;
 const I = window.i18n;
-const TOPIC_INTRO = "Hi Buddy, let's practice English together.";
 
 window.practiceApp = (topicId, questions, speed) => ({
   ...recordableState(I.microphone_error, "turn"),
@@ -25,7 +24,6 @@ window.practiceApp = (topicId, questions, speed) => ({
   },
   init() {
     registerPageRecorder(this);
-    this.speak(TOPIC_INTRO);
   },
   async start() {
     if (this.busy || this.complete) return false;

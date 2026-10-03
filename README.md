@@ -49,7 +49,7 @@ corrections.
 | **Home** (`/`) | Shows today's practice, XP, streak, speaking time, and a quick entry into the recommended topic. |
 | **Read Aloud** (`/warmup`) | Provides daily sentences for pronunciation, fluency, and confidence practice. Results are grouped so children can practise naturally before receiving feedback. |
 | **Topics** (`/topics`) | Lists AI-generated conversation topics and supports creating a custom topic by voice. |
-| **Topic Practice** (`/practice`) | Opens with “Hi Buddy, let's practice English together.” and then moves directly into the selected topic without scoring the greeting. Each completed topic receives a five-dimension evaluation. |
+| **Topic Practice** (`/practice`) | Opens directly on the selected topic without a greeting or warm-up score. Each completed topic receives a five-dimension evaluation. |
 | **Progress** (`/progress`) | Displays day, week, and month summaries, score trends, speaking activity, and an encouraging overall evaluation. |
 | **Parent View** (`/progress/parent`) | Provides a signed, print-friendly learning summary and share QR code for parents or guardians. |
 | **History** (`/history`) | Shows previous speaking turns, questions, transcripts, and coaching results for the active learner. |
@@ -77,8 +77,7 @@ committed to the repository.
 ## Speaking Flow
 
 1. The learner selects a topic or creates one by speaking.
-2. Buddy says, “Hi Buddy, let's practice English together.” The greeting is not
-   recorded or scored.
+2. The selected topic opens immediately with its first question.
 3. The browser records the learner's topic answer and uploads the audio.
 4. TOS stores the recording and Seed Speech ASR transcribes it.
 5. DeepSeek on ModelArk returns structured coaching with praise, one focused

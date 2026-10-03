@@ -1,25 +1,105 @@
 # SpeakBuddy
 
-SpeakBuddy is an AI-powered English speaking practice app that helps students
-build confidence with authentic American accent coaching and humane,
-personalized exercises. Its mobile-first learning experience combines
-conversation topics, read-aloud practice, encouraging feedback, pronunciation
-and fluency scoring, progress tracking, rewards, and student/parent performance
-dashboards.
+**Demo Site:** [https://sg2fo9jdgkvomc1ncqdqv.apigateway-ap-southeast-1.apigw-byteplus.com/](https://sg2fo9jdgkvomc1ncqdqv.apigateway-ap-southeast-1.apigw-byteplus.com/)
 
-Designed for secondary-school learners, SpeakBuddy uses a warm American-English
-Buddy voice and gives one focused correction at a time. Practice difficulty and
-daily content adapt across learner profiles while each child's history, scores,
-XP, badges, and dashboard remain isolated.
+SpeakBuddy is an AI-powered English speaking practice app for secondary-school
+learners. It helps children speak more often, build confidence, and improve
+fluency through short daily conversations, read-aloud exercises, encouraging
+feedback, and a consistent American-English Buddy voice.
 
-## Stack
+The experience is mobile-first and designed to feel supportive rather than
+exam-like. Buddy celebrates what the learner did well, gives one focused
+improvement at a time, suggests a stronger version of the answer, and introduces
+useful new words without interrupting the conversation with too many
+corrections.
 
-- Python 3.11, FastAPI, Uvicorn, Pydantic v2, SQLModel, SQLite
-- Jinja2, HTMX, Alpine.js, Tailwind CDN, Chart.js
-- BytePlus ModelArk, Seed-ASR, Seed-TTS, and TOS
-- Local deterministic AI/audio fallback for development and provider outages
+## How SpeakBuddy Helps
 
-## Run
+### For Learners
+
+- **Low-pressure speaking practice:** children can speak about familiar school,
+  friendship, travel, hobbies, family, and everyday-life topics.
+- **Confidence before correction:** every response starts with positive,
+  specific encouragement.
+- **Focused coaching:** Buddy highlights one small improvement instead of
+  correcting every mistake at once.
+- **Read-aloud training:** daily sentences help learners practise rhythm,
+  clarity, pronunciation, and sentence length.
+- **Adaptive difficulty:** Easy, Normal, Hard, and Expert levels adjust
+  vocabulary, question depth, and sentence complexity.
+- **Fresh daily content:** AI-generated topics and read-aloud material are
+  refreshed regularly and separated by learner profile.
+- **Visible progress:** XP, streaks, speaking time, scores, trophies, and badges
+  make consistent practice easier to maintain.
+
+### For Parents and Guardians
+
+- Review daily, weekly, and monthly speaking activity.
+- Track fluency, response length, word accuracy, pronunciation, and relevance.
+- Read encouraging progress summaries instead of isolated test scores.
+- Compare improvement over time through charts and practice history.
+- Open a signed, shareable parent view with a QR code.
+- Keep each child's account, practice history, topics, scores, XP, and badges
+  isolated from other learner profiles.
+
+## Main Pages and Features
+
+| Page | Purpose |
+| --- | --- |
+| **Home** (`/`) | Shows today's practice, XP, streak, speaking time, and a quick entry into the recommended topic. |
+| **Read Aloud** (`/warmup`) | Provides daily sentences for pronunciation, fluency, and confidence practice. Results are grouped so children can practise naturally before receiving feedback. |
+| **Topics** (`/topics`) | Lists AI-generated conversation topics and supports creating a custom topic by voice. |
+| **Topic Practice** (`/practice`) | Opens with “Hi Buddy, let's practice English together.” and then moves directly into the selected topic without scoring the greeting. Each completed topic receives a five-dimension evaluation. |
+| **Progress** (`/progress`) | Displays day, week, and month summaries, score trends, speaking activity, and an encouraging overall evaluation. |
+| **Parent View** (`/progress/parent`) | Provides a signed, print-friendly learning summary and share QR code for parents or guardians. |
+| **History** (`/history`) | Shows previous speaking turns, questions, transcripts, and coaching results for the active learner. |
+| **Trophies** (`/trophy`) | Displays earned and locked badges that reward practice consistency and speaking milestones. |
+| **Account and Settings** (`/account`, `/settings`) | Manages learner accounts, language, difficulty, speaking speed, nickname, and Buddy voice preferences. |
+
+## BytePlus Services
+
+SpeakBuddy uses the following BytePlus services in its production AI and cloud
+workflow:
+
+| BytePlus Service | How SpeakBuddy Uses It |
+| --- | --- |
+| **ModelArk with DeepSeek V4.1 Flash** | Generates daily conversation topics and read-aloud content, creates custom topics from voice commands, and powers Buddy's structured coaching response. |
+| **Seed Speech ASR** | Converts a learner's uploaded recording into English text and returns confidence data used by the coaching and scoring pipeline. |
+| **Seed Speech TTS** | Synthesizes Buddy's replies and prompts with a consistent American-English voice at learner-selected speaking speeds. |
+| **TOS Object Storage** | Stores uploaded recordings and generated TTS audio. Production objects can use a seven-day lifecycle policy for automatic cleanup. |
+| **veFaaS** | Runs the FastAPI application as a cloud function with a minimum of one and a maximum of two instances. |
+| **BytePlus API Gateway** | Exposes the veFaaS application through the public HTTPS Demo Site URL and routes browser traffic to the production function. |
+
+API keys, access keys, secrets, and model endpoint IDs are supplied only through
+server-side environment variables. They are never embedded in frontend code or
+committed to the repository.
+
+## Speaking Flow
+
+1. The learner selects a topic or creates one by speaking.
+2. Buddy says, “Hi Buddy, let's practice English together.” The greeting is not
+   recorded or scored.
+3. The browser records the learner's topic answer and uploads the audio.
+4. TOS stores the recording and Seed Speech ASR transcribes it.
+5. DeepSeek on ModelArk returns structured coaching with praise, one focused
+   adjustment, a stronger rephrasing, suggested words, and scoring data.
+6. Seed Speech TTS reads Buddy's response aloud.
+7. After the topic is complete, the app saves the evaluation and updates
+   progress, XP, streaks, and badges.
+
+Read-aloud mode follows a separate flow and evaluates practice in groups of ten
+sentences.
+
+## Technology Stack
+
+- Python 3.11 locally and Python 3.9-compatible production packages
+- FastAPI, Uvicorn, Pydantic v2, SQLModel, and SQLite
+- Jinja2, HTMX, Alpine.js, Tailwind CDN, Chart.js, and Lucide icons
+- BytePlus ModelArk, Seed Speech ASR/TTS, TOS, veFaaS, and API Gateway
+- Local deterministic AI and audio fallbacks for development or provider
+  outages
+
+## Run Locally
 
 ```bash
 python3.11 -m venv .venv
@@ -29,9 +109,10 @@ cp .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-Open <http://localhost:8000>. Microphone capture requires localhost or HTTPS.
+Open [http://localhost:8000](http://localhost:8000). Microphone capture requires
+localhost or HTTPS.
 
-The repository also supports the user's preferred `uv` workflow:
+The repository also supports `uv`:
 
 ```bash
 uv venv --python 3.11
@@ -42,58 +123,52 @@ uv run uvicorn app.main:app --reload --port 8000
 
 ## Configuration
 
-Set `MOCK_AI=true` for a fully local demo. With `MOCK_AI=false`, the app uses:
+Set `MOCK_AI=true` for a fully local demo. With `MOCK_AI=false`, configure:
 
-- `SESSION_SECRET`, a long random value used to sign account and parent-share cookies
-- `MODELARK_API_KEY`, `MODELARK_BASE_URL`, `MAIN_AGENT_ENDPOINT`
-- `SPEECH_API_KEY`, Seed-ASR/TTS URLs and resource IDs
+- `SESSION_SECRET`, a long random value used to sign account and parent-share
+  cookies
+- `MODELARK_API_KEY`, `MODELARK_BASE_URL`, and `MAIN_AGENT_ENDPOINT`
+- `SPEECH_API_KEY`, Seed Speech ASR/TTS URLs, and resource IDs
 - `BYTEPLUS_TTS_VOICE`, which must be a verified `en-US` voice ID
-- BytePlus AK/SK, region, endpoint, and public-readable TOS bucket
+- BytePlus AK/SK, region, endpoint, and a public-readable TOS bucket
+- `APP_BASE_URL` with the externally accessible HTTPS application URL
 
-The app fails at startup if the configured voice is not `en-US`. Provider
-errors fall back locally, but never switch to a British or non-English voice.
-TOS should enforce a seven-day lifecycle policy in the BytePlus console.
+The app rejects a production configuration that uses the default session
+secret. It also rejects an unverified non-American Buddy voice. Provider errors
+can fall back locally, but the app never switches to a British or non-English
+voice. Configure a seven-day lifecycle policy for the TOS bucket in the
+BytePlus console.
 
-## Flow
+## Accounts and Data
 
-1. `/practice` redirects to the three-line voice warm-up.
-2. Each turn records audio, stores it, counts loud time, transcribes it, asks
-   Buddy for strict JSON coaching, and synthesizes the response.
-3. The learner echoes the ideal rephrase and collects new words.
-4. Five turns finish the quest and award completion XP and badges.
-5. `/progress/parent` provides a print-friendly summary and share QR code.
+Anonymous visitors use a shared guest profile. `/account` can create and switch
+password-protected learner accounts. Practice history, generated content,
+scores, XP, trophies, and progress are scoped to the active profile.
 
-Anonymous visitors share one guest profile. `/account` can create and switch
-password-protected learner profiles; practice history, XP, topics, trophies, and
-progress stay scoped to the active profile. Difficulty defaults to Normal and
-supports Easy, Normal, Hard, and Expert. `/progress` and the signed parent view
-provide day, week, and month summaries with an encouraging speaking evaluation.
+The current deployment uses instance-local SQLite. This is suitable for the
+single-reserved-instance operating mode, but strict state consistency during
+multi-instance scaling or rolling releases requires an external shared
+database.
 
 ## Tests and Quality
 
 ```bash
 pytest
-ruff check .
+ruff check app
 black --check app tests
 ```
 
-The skill tests cover a happy path and fallback behavior for ASR, TTS, Coach,
-Topics, Difficulty, Gamification, Loud Meter, Pronunciation, and TOS.
+The test suite covers application routes, account and profile isolation, daily
+content releases, grouped scoring, ASR, TTS, AI coaching, topics, difficulty,
+gamification, loud-time tracking, pronunciation, and TOS fallback behavior.
 
-## Manual Acceptance
+## Project Structure
 
-- [ ] iPhone Safari completes Warm-up and a five-turn Quest.
-- [ ] Android Chrome shows a clear microphone permission flow.
-- [ ] Chrome at 375px and 1280px has no clipping or overlap.
-- [ ] English and Chinese UI strings render without omissions.
-- [ ] Missing TOS access falls back to `data/audio`.
-- [ ] TTS is the same American female voice at all three speeds.
-- [ ] 300 total XP promotes the learner to Chatty Robin.
-- [ ] 300 daily loud seconds shows Loud Legend and awards the badge.
-- [ ] An echo score of at least 80 awards the Echo Bonus.
-
-## Structure
-
-`app/skills/*/SKILL.md` documents each stable capability boundary. Editable LLM
-prompts and product decisions live in `plans/`; runtime code loads prompts from
-there so coaching can be tuned without embedding policy inside service code.
+- `app/routers/` contains page and API routes.
+- `app/services/` contains content, evaluation, authentication, and progress
+  workflows.
+- `app/skills/` contains stable AI, speech, storage, scoring, and gamification
+  capability boundaries.
+- `app/templates/` and `app/static/` contain the server-rendered mobile-first
+  interface.
+- `plans/` contains editable prompts and product decisions used by the runtime.

@@ -44,7 +44,7 @@ def store_audio(data: bytes, filename: str, content_type: str) -> StoredAudio:
         except Exception:
             pass
 
-    audio_dir = ROOT / "data" / "audio"
+    audio_dir = getattr(settings, "audio_dir", ROOT / "data" / "audio")
     audio_dir.mkdir(parents=True, exist_ok=True)
     local_path = audio_dir / Path(key).name
     local_path.write_bytes(data)
@@ -59,7 +59,9 @@ def store_audio(data: bytes, filename: str, content_type: str) -> StoredAudio:
 def resolve_audio(key: str) -> StoredAudio | None:
     if not key.startswith("local:"):
         return None
-    path = ROOT / "data" / "audio" / key.removeprefix("local:")
+    settings = get_settings()
+    audio_dir = getattr(settings, "audio_dir", ROOT / "data" / "audio")
+    path = audio_dir / key.removeprefix("local:")
     if not path.exists():
         return None
     return StoredAudio(key, f"/audio/{path.name}", path, "local")

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_base_url: str = "http://localhost:8000"
     database_url: str = "sqlite:///data/speakbuddy.db"
+    local_data_dir: str = "data"
     mock_ai: bool = True
     session_secret: str = "speakbuddy-local-session-secret"
 
@@ -85,6 +86,15 @@ class Settings(BaseSettings):
             and self.byteplus_sk
             and self.tos_bucket
         )
+
+    @property
+    def data_dir(self) -> Path:
+        path = Path(self.local_data_dir)
+        return path if path.is_absolute() else ROOT / path
+
+    @property
+    def audio_dir(self) -> Path:
+        return self.data_dir / "audio"
 
 
 @lru_cache

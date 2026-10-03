@@ -22,7 +22,8 @@ async def synthesize(text: str, speed: str = "normal", voice: str = "") -> str:
     cache_name = hashlib.sha256(
         f"{selected_voice}|{speed}|{text}".encode()
     ).hexdigest()[:24]
-    output = ROOT / "data" / "audio" / f"tts-{cache_name}.mp3"
+    audio_dir = getattr(settings, "audio_dir", ROOT / "data" / "audio")
+    output = audio_dir / f"tts-{cache_name}.mp3"
     if output.exists():
         return f"/audio/{output.name}"
     if not settings.speech_enabled:

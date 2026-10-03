@@ -19,7 +19,7 @@ from app.services.content_releases import (
     payload_for_release,
 )
 
-_CONTENT_LOCKS: dict[tuple[asyncio.AbstractEventLoop, str], asyncio.Lock] = {}
+_CONTENT_LOCKS: dict[tuple[asyncio.AbstractEventLoop, int], asyncio.Lock] = {}
 
 
 def current_daily_content(
@@ -170,7 +170,7 @@ async def _ensure_daily_content_locked(
 async def ensure_daily_content(
     session: Session, user: User, force: bool = False
 ) -> DailyPracticeContent:
-    key = (asyncio.get_running_loop(), "all")
+    key = (asyncio.get_running_loop(), user.id or 0)
     lock = _CONTENT_LOCKS.setdefault(key, asyncio.Lock())
     async with lock:
         return await _ensure_daily_content_locked(session, user, force)

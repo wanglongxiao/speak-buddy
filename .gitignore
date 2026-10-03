@@ -12,7 +12,12 @@ uv.lock
 docs/
 tests/
 .vscode/
+.vefaas/
+run_vefaas.sh
+scripts/
 data/*.db
+data/*.db-shm
+data/*.db-wal
 data/audio/*
 !data/audio/.gitkeep
 .DS_Store

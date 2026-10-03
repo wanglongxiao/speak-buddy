@@ -3,6 +3,7 @@ from dataclasses import asdict
 from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session, col, select
 
 from app.config import get_settings
@@ -65,12 +66,18 @@ async def upload_audio(
     duration_ms: int = Form(0),
 ):
     content = await audio.read()
-    stored = store_audio(
+    stored = await run_in_threadpool(
+        store_audio,
         content,
         audio.filename or "recording.webm",
         audio.content_type or "audio/webm",
     )
-    loud = assess(rms, duration_ms, wav_path=stored.local_path)
+    loud = await run_in_threadpool(
+        assess,
+        rms,
+        duration_ms,
+        wav_path=stored.local_path,
+    )
     return {
         "audio_key": stored.key,
         "url": stored.url,

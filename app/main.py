@@ -1,5 +1,4 @@
-import asyncio
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -22,29 +21,20 @@ from app.routers import (
 from app.services.daily_content import cleanup_expired_content
 
 
-async def cleanup_loop() -> None:
-    while True:
-        await asyncio.sleep(3600)
-        with Session(engine) as session:
-            cleanup_expired_content(session)
-
-
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     get_settings()
     init_db()
     with Session(engine) as session:
         cleanup_expired_content(session)
-    cleanup_task = asyncio.create_task(cleanup_loop())
     yield
-    cleanup_task.cancel()
-    with suppress(asyncio.CancelledError):
-        await cleanup_task
 
 
 app = FastAPI(title="SpeakBuddy", version="0.1.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=ROOT / "app" / "static"), name="static")
-app.mount("/audio", StaticFiles(directory=ROOT / "data" / "audio"), name="audio")
+audio_dir = get_settings().audio_dir
+audio_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/audio", StaticFiles(directory=audio_dir), name="audio")
 app.include_router(pages.router)
 app.include_router(auth_pages.router)
 app.include_router(content_pages.router)

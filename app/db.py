@@ -1,7 +1,7 @@
 import json
 from collections.abc import Generator
 
-from sqlalchemy import inspect, text
+from sqlalchemy import event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
@@ -16,7 +16,19 @@ if settings.database_url.startswith("sqlite:///"):
 engine: Engine = create_engine(
     settings.database_url,
     connect_args={"check_same_thread": False},
+    pool_pre_ping=True,
 )
+
+if settings.database_url.startswith("sqlite"):
+
+    @event.listens_for(engine, "connect")
+    def configure_sqlite(connection, _record) -> None:
+        cursor = connection.cursor()
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.close()
+
 
 TOPICS = [
     ("My Dream Weekend", "What would your perfect weekend look like?"),

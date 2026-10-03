@@ -67,9 +67,7 @@ window.warmupApp = () => ({
     () => new URLSearchParams(location.search).has("quest") ? "warmup" : "shoutout"
   ),
   lines: [
-    "Hi Buddy!",
-    "I'm ready to speak English today!",
-    "Let's make today AWESOME!"
+    "Hi Buddy, let's practice English together."
   ],
   readAloudLines: I.read_aloud_lines_by_difficulty?.[window.userDifficulty]
     || I.read_aloud_lines,

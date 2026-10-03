@@ -19,7 +19,7 @@ Design principles retained by requirement:
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=5">
+    <link rel="stylesheet" href="/static/css/app.css?v=6">
     <link rel="stylesheet" href="/static/css/components.css?v=6">
     <link rel="stylesheet" href="/static/css/recorder.css?v=2">
     <link rel="stylesheet" href="/static/css/dashboard.css?v=2">
@@ -31,9 +31,9 @@ Design principles retained by requirement:
       window.dailyReadAloud = {{ daily_read_aloud|default([])|tojson }};
     </script>
     <script src="/static/js/recorder.js?v=3"></script>
-    <script src="/static/js/app.js?v=10"></script>
-    <script src="/static/js/practice.js?v=1"></script>
-    <script src="/static/js/read-aloud.js?v=2"></script>
+    <script src="/static/js/app.js?v=11"></script>
+    <script src="/static/js/practice.js?v=2"></script>
+    <script src="/static/js/read-aloud.js?v=3"></script>
     <script src="/static/js/global-recorder.js?v=2"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -45,7 +45,11 @@ Design principles retained by requirement:
     <main class="shell">
       <header class="topbar">
         <a class="brand" href="/">
-          <span class="buddy-mark" aria-hidden="true"></span>
+          <span class="buddy-mark" aria-hidden="true">
+            <span class="buddy-bear-face">
+              <span class="buddy-bear-muzzle"></span>
+            </span>
+          </span>
           <span>{{ t.brand }}</span>
         </a>
         <div class="flex items-center gap-2">

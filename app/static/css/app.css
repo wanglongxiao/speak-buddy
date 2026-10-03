@@ -62,7 +62,7 @@ a {
 
 .buddy-mark {
   align-items: center;
-  background: var(--mint);
+  background: #ffe3a3;
   border: 3px solid var(--ink);
   border-radius: 50%;
   display: inline-flex;
@@ -72,22 +72,79 @@ a {
   width: 42px;
 }
 
+.buddy-mark::before,
+.buddy-mark::after {
+  background: #a86745;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  content: "";
+  height: 12px;
+  position: absolute;
+  top: 6px;
+  width: 12px;
+}
+
 .buddy-mark::before {
-  content: "•  •";
-  font-size: 14px;
-  margin-top: -8px;
+  left: 5px;
 }
 
 .buddy-mark::after {
+  right: 5px;
+}
+
+.buddy-bear-face {
+  background: #b97952;
   border: 2px solid var(--ink);
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
-  bottom: 8px;
+  border-radius: 48% 48% 50% 50%;
+  height: 29px;
+  position: relative;
+  width: 30px;
+  z-index: 1;
+}
+
+.buddy-bear-face::before {
+  background: var(--ink);
+  border-radius: 50%;
+  box-shadow: 12px 0 0 var(--ink);
   content: "";
-  height: 5px;
+  height: 3px;
+  left: 6px;
   position: absolute;
-  width: 13px;
+  top: 8px;
+  width: 3px;
+}
+
+.buddy-bear-muzzle {
+  background: #f3d3ad;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  bottom: 3px;
+  height: 11px;
+  left: 7px;
+  position: absolute;
+  width: 14px;
+}
+
+.buddy-bear-muzzle::before {
+  background: var(--ink);
+  border-radius: 50% 50% 60% 60%;
+  content: "";
+  height: 4px;
+  left: 4px;
+  position: absolute;
+  top: 1px;
+  width: 5px;
+}
+
+.buddy-bear-muzzle::after {
+  border-bottom: 1.5px solid var(--ink);
+  border-radius: 50%;
+  bottom: 1px;
+  content: "";
+  height: 4px;
+  left: 3px;
+  position: absolute;
+  width: 6px;
 }
 
 .loud-pill {

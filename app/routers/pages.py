@@ -70,6 +70,8 @@ async def warmup(
     topic_id: int = 1,
     session: Session = Depends(get_session),
 ):
+    if "quest" in request.query_params:
+        return RedirectResponse(f"/practice?topic_id={topic_id}", status_code=303)
     context = page_context(request, session, "warmup")
     daily = await ensure_daily_content(session, context["user"])
     context.update(
@@ -85,11 +87,8 @@ async def warmup(
 def practice(
     request: Request,
     topic_id: int = 1,
-    ready: bool = False,
     session: Session = Depends(get_session),
 ):
-    if not ready:
-        return RedirectResponse(f"/warmup?quest=1&topic_id={topic_id}", status_code=303)
     context = page_context(request, session, "practice")
     user = context["user"]
     topic = session.exec(

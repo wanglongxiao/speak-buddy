@@ -28,9 +28,7 @@ window.warmupApp = () => ({
   awaitingNext: false,
   questMode: new URLSearchParams(location.search).has("quest"),
   warmupLines: [
-    "Hi Buddy!",
-    "I'm ready to speak English today!",
-    "Let's make today AWESOME!"
+    "Hi Buddy, let's practice English together."
   ],
   get lines() {
     return this.questMode

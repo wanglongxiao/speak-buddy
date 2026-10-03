@@ -145,6 +145,25 @@
   width: 28px;
 }
 
+.practice-refresh-overlay {
+  align-items: center;
+  background: rgba(255, 248, 238, 0.78);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  position: fixed;
+  z-index: 60;
+}
+
+.practice-refresh-spinner {
+  animation: spin 0.8s linear infinite;
+  border: 8px solid rgba(38, 50, 56, 0.14);
+  border-radius: 50%;
+  border-top-color: var(--coral);
+  height: 72px;
+  width: 72px;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

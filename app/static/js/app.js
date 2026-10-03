@@ -139,5 +139,44 @@ window.topicCreator = () => ({
 
 document.addEventListener("DOMContentLoaded", () => {
   lucide.createIcons({ attrs: { "stroke-width": 2.4 } });
+  const refreshForm = document.getElementById("practice-refresh-form");
+  const refreshOverlay = document.getElementById("practice-refresh-overlay");
+  refreshForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (refreshForm.dataset.submitting === "true") return;
+    refreshForm.dataset.submitting = "true";
+    const refreshButton = refreshForm.querySelector("button");
+    refreshButton?.setAttribute("disabled", "");
+    if (refreshOverlay) {
+      refreshOverlay.hidden = false;
+      refreshOverlay.setAttribute("aria-hidden", "false");
+    }
+    try {
+      const response = await fetch(refreshForm.action, {
+        method: "POST",
+        credentials: "same-origin"
+      });
+      if (!response.ok) throw new Error("Practice refresh failed");
+      window.location.assign(response.url);
+    } catch (_) {
+      refreshForm.dataset.submitting = "false";
+      refreshButton?.removeAttribute("disabled");
+      if (refreshOverlay) {
+        refreshOverlay.hidden = true;
+        refreshOverlay.setAttribute("aria-hidden", "true");
+      }
+    }
+  });
+});
+
+window.addEventListener("pageshow", () => {
+  const refreshForm = document.getElementById("practice-refresh-form");
+  const refreshOverlay = document.getElementById("practice-refresh-overlay");
+  if (refreshForm) refreshForm.dataset.submitting = "false";
+  refreshForm?.querySelector("button")?.removeAttribute("disabled");
+  if (refreshOverlay) {
+    refreshOverlay.hidden = true;
+    refreshOverlay.setAttribute("aria-hidden", "true");
+  }
 });
 })();

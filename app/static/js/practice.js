@@ -27,8 +27,9 @@ window.practiceApp = (topicId, questions, speed) => ({
   history: [],
   voiceMode: false,
   voiceStatus: "",
-  speak(text) {
-    return speak(text, this.speed);
+  audioBlocked: false,
+  speak(text, options = {}) {
+    return speak(text, this.speed, options);
   },
   init() {
     registerPageRecorder(this);
@@ -69,12 +70,22 @@ window.practiceApp = (topicId, questions, speed) => ({
     return this.voiceMode;
   },
   async askQuestion() {
+    this.audioBlocked = false;
     this.voiceStatus = I.buddy_speaking;
-    const playback = this.speak(this.question);
-    const listening = this.listenForReply();
-    await playback;
+    let listening = Promise.resolve(false);
+    const played = await this.speak(this.question, {
+      onStart: () => {
+        listening = this.listenForReply();
+      }
+    });
+    if (!played) {
+      this.audioBlocked = true;
+      this.voiceStatus = "";
+      return false;
+    }
     await listening;
     if (this.voiceMode && this.recording) this.voiceStatus = I.listening;
+    return true;
   },
   async start() {
     if (this.busy || this.complete) return false;

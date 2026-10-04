@@ -16,8 +16,13 @@
   <div class="card stack" data-current-question x-show="!complete">
     <span class="label">{{ t.buddy_asks }}</span>
     <h2 x-text="question"></h2>
-    <button class="btn btn-secondary" type="button" @click="speak(question)">
+    <button class="btn btn-secondary" type="button" x-show="!audioBlocked"
+      @click="speak(question)">
       <i data-lucide="volume-2"></i>{{ t.listen }}
+    </button>
+    <button class="btn btn-primary btn-wide" type="button" x-show="audioBlocked"
+      x-cloak @click="askQuestion()">
+      <i data-lucide="volume-2"></i>{{ t.tap_to_start_audio }}
     </button>
     <div class="voice-live" x-show="voiceStatus" x-cloak role="status" aria-live="polite">
       <span :class="{active: recording}"></span>

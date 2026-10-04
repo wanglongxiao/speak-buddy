@@ -11,8 +11,13 @@
   <div class="card stack">
     <span class="label" x-text="(index + 1) + ' / ' + lines.length"></span>
     <h2 x-text="lines[index]"></h2>
-    <button class="btn btn-secondary" type="button" @click="speak(lines[index])">
+    <button class="btn btn-secondary" type="button" x-show="!audioBlocked"
+      @click="playCurrentLine()">
       <i data-lucide="volume-2"></i>{{ t.listen }}
+    </button>
+    <button class="btn btn-primary btn-wide" type="button" x-show="audioBlocked"
+      x-cloak @click="playCurrentLine()">
+      <i data-lucide="volume-2"></i>{{ t.tap_to_start_audio }}
     </button>
     <div class="meter"><span :style="`width:${level}%`"></span></div>
     <p class="text-center font-extrabold" x-text="status"></p>

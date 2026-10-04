@@ -87,43 +87,63 @@ async function postJSON(url, payload) {
 let activeAudio = null;
 let activeUtterance = null;
 let finishPlayback = null;
+const speechAudio = new Audio();
+speechAudio.preload = "auto";
+speechAudio.playsInline = true;
 
 function stopSpeaking() {
-  if (activeAudio) {
-    activeAudio.pause();
-    activeAudio.removeAttribute("src");
-    activeAudio.load();
-    activeAudio = null;
+  const audio = activeAudio;
+  const utterance = activeUtterance;
+  const finish = finishPlayback;
+  if (finish) finish(false);
+  if (audio) {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
   }
-  if (activeUtterance) {
+  if (utterance) {
     speechSynthesis.cancel();
     activeUtterance = null;
   }
-  if (finishPlayback) {
-    finishPlayback(false);
-    finishPlayback = null;
-  }
 }
 
-function playAudio(audio) {
+function playAudio(audio, onStart) {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
+      audio.removeEventListener("playing", onPlaying);
+    };
+    const finish = (played) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (activeAudio === audio) activeAudio = null;
+      finishPlayback = null;
+      resolve(played);
+    };
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (activeAudio === audio) activeAudio = null;
+      finishPlayback = null;
+      reject(error);
+    };
+    const onEnded = () => finish(true);
+    const onError = () => fail(new Error("audio playback failed"));
+    const onPlaying = () => onStart?.();
     activeAudio = audio;
-    finishPlayback = resolve;
-    audio.addEventListener("ended", () => {
-      activeAudio = null;
-      finishPlayback = null;
-      resolve(true);
-    }, { once: true });
-    audio.addEventListener("error", () => {
-      activeAudio = null;
-      finishPlayback = null;
-      reject(new Error("audio playback failed"));
-    }, { once: true });
-    audio.play().catch(reject);
+    finishPlayback = finish;
+    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
+    audio.addEventListener("playing", onPlaying, { once: true });
+    audio.play().catch(fail);
   });
 }
 
-function speakInBrowser(text, speed) {
+function speakInBrowser(text, speed, onStart) {
   return new Promise((resolve) => {
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -140,8 +160,15 @@ function speakInBrowser(text, speed) {
     };
     utterance.onend = () => finish(true);
     utterance.onerror = () => finish(false);
+    onStart?.();
     speechSynthesis.speak(utterance);
   });
+}
+
+function isAutoplayBlocked(error) {
+  const detail = `${error?.name || ""} ${error?.message || ""}`;
+  return error?.name === "NotAllowedError"
+    || /user (gesture|interaction)|not allowed/i.test(detail);
 }
 
 async function speak(text, speed = "normal", options = {}) {
@@ -149,13 +176,18 @@ async function speak(text, speed = "normal", options = {}) {
   try {
     const params = new URLSearchParams({ text, speed });
     if (options.voice) params.set("voice", options.voice);
-    const played = await playAudio(new Audio(`/api/tts/stream?${params}`));
+    speechAudio.src = `/api/tts/stream?${params}`;
+    const played = await playAudio(speechAudio, options.onStart);
     if (played) return true;
-  } catch (_) {
+  } catch (error) {
+    if (isAutoplayBlocked(error)) {
+      window.dispatchEvent(new CustomEvent("speakbuddy:autoplay-blocked"));
+      return false;
+    }
     // Browser voice remains an explicit en-US fallback.
     stopSpeaking();
   }
-  return speakInBrowser(text, speed);
+  return speakInBrowser(text, speed, options.onStart);
 }
 
 function isSpeaking() {

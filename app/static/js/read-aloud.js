@@ -26,6 +26,7 @@ window.warmupApp = () => ({
   attempts: [],
   completed: false,
   awaitingNext: false,
+  audioBlocked: false,
   questMode: new URLSearchParams(location.search).has("quest"),
   get lines() {
     return window.dailyReadAloud?.length ? window.dailyReadAloud : I.read_aloud_lines;
@@ -37,12 +38,18 @@ window.warmupApp = () => ({
     };
     if (!this.lines.length) return;
     this.index = Math.floor(Math.random() * this.lines.length);
-    speak(this.lines[this.index]);
+    this.playCurrentLine();
   },
   speak,
+  async playCurrentLine() {
+    this.audioBlocked = false;
+    const played = await speak(this.lines[this.index]);
+    this.audioBlocked = !played;
+    return played;
+  },
   advanceLine() {
     this.index = (this.index + 1) % this.lines.length;
-    speak(this.lines[this.index]);
+    this.playCurrentLine();
   },
   async start() {
     if (this.busy || this.awaitingNext) return false;

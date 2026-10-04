@@ -47,7 +47,7 @@ corrections.
 | Page | Purpose |
 | --- | --- |
 | **Home** (`/`) | Shows today's practice, XP, streak, and speaking time. Starting the quest selects a random unfinished topic for the day. |
-| **Read Aloud** (`/warmup`) | Provides daily sentences for pronunciation, fluency, and confidence practice. Results are grouped so children can practise naturally before receiving feedback. |
+| **Read Aloud** (`/warmup`) | Starts at a random daily sentence, cycles through the complete set, and groups results so children can practise naturally before receiving feedback. |
 | **Topics** (`/topics`) | Lists AI-generated conversation topics and supports creating a custom topic by voice. |
 | **Topic Practice** (`/practice`) | Opens directly on the selected topic, streams the first question automatically, and listens for an interruptible spoken reply. Each completed topic receives a five-dimension evaluation. |
 | **Progress** (`/progress`) | Displays day, week, and month summaries, score trends, speaking activity, and an encouraging overall evaluation. |

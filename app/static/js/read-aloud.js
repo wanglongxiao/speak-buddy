@@ -35,9 +35,15 @@ window.warmupApp = () => ({
       start: () => this.start(),
       stop: () => this.stop()
     };
+    if (!this.lines.length) return;
+    this.index = Math.floor(Math.random() * this.lines.length);
     speak(this.lines[this.index]);
   },
   speak,
+  advanceLine() {
+    this.index = (this.index + 1) % this.lines.length;
+    speak(this.lines[this.index]);
+  },
   async start() {
     if (this.busy || this.awaitingNext) return false;
     this.quiet = false;
@@ -87,14 +93,13 @@ window.warmupApp = () => ({
           transcript: asr.transcript,
           asr_confidence: asr.confidence
         });
-        if (this.attempts.length === 10) {
+        if (this.attempts.length === 10 || this.count >= this.lines.length) {
           this.evaluation = await postJSON("/api/evaluate-read-aloud-group", {
             attempts: this.attempts
           });
           this.awaitingNext = true;
         } else {
-          this.index += 1;
-          speak(this.lines[this.index]);
+          this.advanceLine();
         }
       }
       this.status = I.voice_success;
@@ -110,13 +115,12 @@ window.warmupApp = () => ({
     this.evaluation = null;
     this.status = "";
     this.attempts = [];
-    if (this.index === this.lines.length - 1) {
+    if (this.count >= this.lines.length) {
       this.completed = true;
       localStorage.setItem("speakbuddy.warmupDate", new Date().toDateString());
       return;
     }
-    this.index += 1;
-    speak(this.lines[this.index]);
+    this.advanceLine();
   }
 });
 })();

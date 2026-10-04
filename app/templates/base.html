@@ -32,7 +32,7 @@ Design principles retained by requirement:
     </script>
     <script src="/static/js/recorder.js?v=6"></script>
     <script src="/static/js/streaming-voice.js?v=1"></script>
-    <script src="/static/js/app.js?v=15"></script>
+    <script src="/static/js/app.js?v=16"></script>
     <script src="/static/js/practice.js?v=7"></script>
     <script src="/static/js/read-aloud.js?v=6"></script>
     <script src="/static/js/global-recorder.js?v=2"></script>
@@ -82,7 +82,6 @@ Design principles retained by requirement:
       <a href="/topics" class="{{ 'active' if page == 'topics' else '' }}"><i data-lucide="messages-square"></i>{{ t.nav_topics }}</a>
       <a href="/progress" class="{{ 'active' if page == 'progress' else '' }}"><i data-lucide="trending-up"></i>{{ t.nav_progress }}</a>
     </nav>
-    {% if page != "home" %}
     <div class="global-recorder" x-data="globalRecorder()">
       <div class="global-record-feedback" x-show="recording || status" x-cloak>
         <strong x-text="recording ? window.i18n.release : status"></strong>
@@ -101,7 +100,6 @@ Design principles retained by requirement:
         <i data-lucide="mic-2"></i>
       </button>
     </div>
-    {% endif %}
     <div id="practice-refresh-overlay" class="practice-refresh-overlay" role="status"
       aria-live="polite" aria-label="{{ t.refresh_practice }}" hidden>
       <span class="practice-refresh-spinner" aria-hidden="true"></span>

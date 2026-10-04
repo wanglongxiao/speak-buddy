@@ -147,8 +147,12 @@ document.addEventListener("click", (event) => {
   window.speakBuddy.unlockAudio();
 }, { capture: true });
 
-document.addEventListener("DOMContentLoaded", () => {
+function renderIcons() {
   lucide.createIcons({ attrs: { "stroke-width": 2.4 } });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderIcons();
   const refreshForm = document.getElementById("practice-refresh-form");
   const refreshOverlay = document.getElementById("practice-refresh-overlay");
   refreshForm?.addEventListener("submit", async (event) => {
@@ -178,6 +182,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+document.addEventListener("htmx:afterSwap", renderIcons);
 
 window.addEventListener("pageshow", () => {
   const refreshForm = document.getElementById("practice-refresh-form");

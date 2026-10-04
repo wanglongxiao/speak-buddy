@@ -19,7 +19,8 @@
     <div class="note" x-show="topic" x-cloak>
       <strong x-text="topic?.title"></strong>
       <p x-text="topic?.starter_question"></p>
-      <a class="btn btn-primary btn-wide" :href="`/practice?topic_id=${topic?.id || 1}&ready=1`">
+      <a class="btn btn-primary btn-wide" data-audio-navigation hx-boost="true"
+        :href="`/practice?topic_id=${topic?.id || 1}&ready=1`">
         {{ t.start_quest }}
       </a>
     </div>
@@ -27,7 +28,8 @@
 
   <div class="topic-grid">
     {% for topic in topics %}
-    <a class="card topic-card no-underline text-inherit" href="/practice?topic_id={{ topic.id }}&ready=1">
+    <a class="card topic-card no-underline text-inherit" data-audio-navigation
+      hx-boost="true" href="/practice?topic_id={{ topic.id }}&ready=1">
       <span class="label">{{ t.difficulty }} · {{ topic.difficulty }}</span>
       <h2>{{ topic.title }}</h2>
       <p>{{ topic.starter_question }}</p>

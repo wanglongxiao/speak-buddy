@@ -133,6 +133,20 @@ window.topicCreator = () => ({
   }
 });
 
+document.addEventListener("click", (event) => {
+  const link = event.target.closest?.("a[data-audio-navigation]");
+  if (
+    !link
+    || event.defaultPrevented
+    || event.button !== 0
+    || event.metaKey
+    || event.ctrlKey
+    || event.shiftKey
+    || event.altKey
+  ) return;
+  window.speakBuddy.unlockAudio();
+}, { capture: true });
+
 document.addEventListener("DOMContentLoaded", () => {
   lucide.createIcons({ attrs: { "stroke-width": 2.4 } });
   const refreshForm = document.getElementById("practice-refresh-form");

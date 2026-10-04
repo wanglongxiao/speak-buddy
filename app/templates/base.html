@@ -30,9 +30,9 @@ Design principles retained by requirement:
       window.userDifficulty = {{ user.default_difficulty|tojson }};
       window.dailyReadAloud = {{ daily_read_aloud|default([])|tojson }};
     </script>
-    <script src="/static/js/recorder.js?v=5"></script>
+    <script src="/static/js/recorder.js?v=6"></script>
     <script src="/static/js/streaming-voice.js?v=1"></script>
-    <script src="/static/js/app.js?v=14"></script>
+    <script src="/static/js/app.js?v=15"></script>
     <script src="/static/js/practice.js?v=7"></script>
     <script src="/static/js/read-aloud.js?v=6"></script>
     <script src="/static/js/global-recorder.js?v=2"></script>
@@ -76,7 +76,8 @@ Design principles retained by requirement:
     </main>
     <nav class="bottom-nav" aria-label="Primary">
       <a href="/" class="{{ 'active' if page == 'home' else '' }}"><i data-lucide="home"></i>{{ t.nav_home }}</a>
-      <a href="/warmup" class="{{ 'active' if page == 'warmup' else '' }}"><i data-lucide="audio-lines"></i>{{ t.nav_warmup }}</a>
+      <a href="/warmup" data-audio-navigation hx-boost="true"
+        class="{{ 'active' if page == 'warmup' else '' }}"><i data-lucide="audio-lines"></i>{{ t.nav_warmup }}</a>
       <span class="nav-record-space" aria-hidden="true"></span>
       <a href="/topics" class="{{ 'active' if page == 'topics' else '' }}"><i data-lucide="messages-square"></i>{{ t.nav_topics }}</a>
       <a href="/progress" class="{{ 'active' if page == 'progress' else '' }}"><i data-lucide="trending-up"></i>{{ t.nav_progress }}</a>

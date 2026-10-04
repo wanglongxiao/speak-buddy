@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlmodel import Field, SQLModel
 
 from app.compat import UTC
+from app.services.voices import DEFAULT_BUDDY_VOICE
 
 
 def utcnow() -> datetime:
@@ -22,7 +23,7 @@ class User(SQLModel, table=True):
     lang: str = "en"
     default_difficulty: str = "normal"
     default_speed: str = "normal"
-    buddy_voice: str = "en_female_skye_emo_v2_mars_bigtts"
+    buddy_voice: str = DEFAULT_BUDDY_VOICE
     total_xp: int = 0
     created_at: datetime = Field(default_factory=utcnow)
 

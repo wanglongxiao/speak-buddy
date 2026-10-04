@@ -19,6 +19,10 @@
     <button class="btn btn-secondary" type="button" @click="speak(question)">
       <i data-lucide="volume-2"></i>{{ t.listen }}
     </button>
+    <div class="voice-live" x-show="voiceStatus" x-cloak role="status" aria-live="polite">
+      <span :class="{active: recording}"></span>
+      <strong x-text="voiceStatus"></strong>
+    </div>
     <div class="meter"><span :style="`width:${level}%`"></span></div>
   </div>
 
@@ -76,7 +80,7 @@
     <a class="btn btn-primary btn-wide" href="/progress">{{ t.nav_progress }}</a>
   </div>
 
-  <button class="floating-next" type="button" x-show="result && !complete"
+  <button class="floating-next" type="button" x-show="result && !complete && !voiceMode"
     x-cloak @click="next()" title="{{ t.next }}" aria-label="{{ t.next }}">
     <i data-lucide="arrow-right"></i>
   </button>

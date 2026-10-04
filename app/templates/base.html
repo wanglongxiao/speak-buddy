@@ -20,7 +20,7 @@ Design principles retained by requirement:
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/app.css?v=6">
-    <link rel="stylesheet" href="/static/css/components.css?v=7">
+    <link rel="stylesheet" href="/static/css/components.css?v=8">
     <link rel="stylesheet" href="/static/css/recorder.css?v=2">
     <link rel="stylesheet" href="/static/css/dashboard.css?v=2">
     <link rel="stylesheet" href="/static/css/feedback.css?v=2">
@@ -30,9 +30,10 @@ Design principles retained by requirement:
       window.userDifficulty = {{ user.default_difficulty|tojson }};
       window.dailyReadAloud = {{ daily_read_aloud|default([])|tojson }};
     </script>
-    <script src="/static/js/recorder.js?v=3"></script>
-    <script src="/static/js/app.js?v=13"></script>
-    <script src="/static/js/practice.js?v=4"></script>
+    <script src="/static/js/recorder.js?v=4"></script>
+    <script src="/static/js/streaming-voice.js?v=1"></script>
+    <script src="/static/js/app.js?v=14"></script>
+    <script src="/static/js/practice.js?v=6"></script>
     <script src="/static/js/read-aloud.js?v=4"></script>
     <script src="/static/js/global-recorder.js?v=2"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -80,6 +81,7 @@ Design principles retained by requirement:
       <a href="/topics" class="{{ 'active' if page == 'topics' else '' }}"><i data-lucide="messages-square"></i>{{ t.nav_topics }}</a>
       <a href="/progress" class="{{ 'active' if page == 'progress' else '' }}"><i data-lucide="trending-up"></i>{{ t.nav_progress }}</a>
     </nav>
+    {% if page != "home" %}
     <div class="global-recorder" x-data="globalRecorder()">
       <div class="global-record-feedback" x-show="recording || status" x-cloak>
         <strong x-text="recording ? window.i18n.release : status"></strong>
@@ -98,6 +100,7 @@ Design principles retained by requirement:
         <i data-lucide="mic-2"></i>
       </button>
     </div>
+    {% endif %}
     <div id="practice-refresh-overlay" class="practice-refresh-overlay" role="status"
       aria-live="polite" aria-label="{{ t.refresh_practice }}" hidden>
       <span class="practice-refresh-spinner" aria-hidden="true"></span>

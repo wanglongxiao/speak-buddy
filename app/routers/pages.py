@@ -1,4 +1,5 @@
 import json
+import secrets
 from datetime import date
 
 from fastapi import APIRouter, Depends, Request
@@ -15,6 +16,7 @@ from app.models import (
     LoudMeter,
     PracticeSession,
     Streak,
+    TaskEvaluation,
     Topic,
     Turn,
 )
@@ -49,15 +51,11 @@ async def home(request: Request, session: Session = Depends(get_session)):
     context = page_context(request, session, "home")
     user = context["user"]
     daily = await ensure_daily_content(session, user)
-    first_topic = session.exec(
-        select(Topic).where(Topic.daily_content_id == daily.id).order_by(col(Topic.id))
-    ).first()
     streak = session.get(Streak, user.id) or Streak(user_id=user.id or 0)
     context.update(
         {
             "title": title_for(user.total_xp),
             "streak": streak,
-            "first_topic_id": first_topic.id if first_topic else 1,
             "daily_content": daily,
         }
     )
@@ -116,6 +114,36 @@ def practice(
     context["starter_question"] = starter_question
     context["topic_questions"] = questions
     return templates.TemplateResponse(request, "practice.html", context)
+
+
+@router.get("/practice/today")
+async def practice_today(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    user = request_user(request, session)
+    daily = await ensure_daily_content(session, user)
+    topics = session.exec(select(Topic).where(Topic.daily_content_id == daily.id)).all()
+    completed_topic_ids = set(
+        session.exec(
+            select(PracticeSession.topic_id)
+            .join(
+                TaskEvaluation,
+                TaskEvaluation.session_id == PracticeSession.id,
+            )
+            .where(
+                PracticeSession.user_id == user.id,
+                TaskEvaluation.task_type == "topic",
+            )
+        ).all()
+    )
+    unfinished = [topic for topic in topics if topic.id not in completed_topic_ids]
+    candidates = unfinished or topics
+    topic_id = secrets.choice(candidates).id if candidates else 1
+    return RedirectResponse(
+        f"/practice?topic_id={topic_id}&autoplay=1",
+        status_code=303,
+    )
 
 
 @router.get("/topics")

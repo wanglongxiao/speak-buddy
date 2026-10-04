@@ -35,37 +35,100 @@
   padding: 12px 14px;
 }
 
-.home-practice-heading {
-  align-items: center;
+.voice-picker {
+  border: 0;
   display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
 }
 
-.home-countdown {
+.voice-group-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.voice-options {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.voice-option {
   align-items: center;
-  aspect-ratio: 1;
-  background: var(--gold);
-  border: 3px solid var(--ink);
-  border-radius: 50%;
-  box-shadow: 0 5px 0 #e9ad38;
-  display: flex;
-  justify-content: center;
-  width: 88px;
+  border: 2px solid #dde1df;
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  padding: 9px;
 }
 
-.home-countdown strong {
-  font-size: 30px;
-  line-height: 1;
-  text-align: center;
+.voice-option:has(input:checked) {
+  background: #edf9f4;
+  border-color: var(--mint-dark);
 }
 
-.home-countdown.started strong {
-  font-size: 17px;
+.voice-option input {
+  accent-color: var(--mint-dark);
 }
 
-.home-countdown strong:not(:empty) {
+.voice-option span {
+  min-width: 0;
+}
+
+.voice-option strong,
+.voice-option small {
+  display: block;
   overflow-wrap: anywhere;
+}
+
+.voice-option small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.voice-preview {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  padding: 0;
+  width: 34px;
+}
+
+.voice-preview svg {
+  height: 18px;
+  width: 18px;
+}
+
+.voice-live {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.voice-live span {
+  background: #aeb8b4;
+  border-radius: 50%;
+  height: 9px;
+  width: 9px;
+}
+
+.voice-live span.active {
+  animation: pulse 1.2s infinite;
+  background: var(--mint-dark);
 }
 
 .topic-grid,
@@ -220,6 +283,12 @@
 
   .bottom-nav a {
     font-size: 13px;
+  }
+}
+
+@media (max-width: 560px) {
+  .voice-options {
+    grid-template-columns: 1fr;
   }
 }
 

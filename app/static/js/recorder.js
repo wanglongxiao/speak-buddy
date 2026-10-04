@@ -84,26 +84,89 @@ async function postJSON(url, payload) {
   return response.json();
 }
 
-async function speak(text, speed = "normal") {
-  try {
-    const result = await postJSON("/api/tts", {
-      text,
-      speed
-    });
-    if (result.url) {
-      await new Audio(result.url).play();
-      return;
-    }
-  } catch (_) {
-    // Browser voice remains an explicit en-US fallback.
+let activeAudio = null;
+let activeUtterance = null;
+let finishPlayback = null;
+
+function stopSpeaking() {
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.removeAttribute("src");
+    activeAudio.load();
+    activeAudio = null;
   }
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  utterance.rate = { slow: 0.85, normal: 1, fast: 1.15 }[speed] || 1;
-  const voice = speechSynthesis.getVoices().find((item) => item.lang === "en-US");
-  if (voice) utterance.voice = voice;
-  speechSynthesis.speak(utterance);
+  if (activeUtterance) {
+    speechSynthesis.cancel();
+    activeUtterance = null;
+  }
+  if (finishPlayback) {
+    finishPlayback(false);
+    finishPlayback = null;
+  }
 }
 
-window.speakBuddy = { VoiceRecorder, postJSON, speak, uploadRecording };
+function playAudio(audio) {
+  return new Promise((resolve, reject) => {
+    activeAudio = audio;
+    finishPlayback = resolve;
+    audio.addEventListener("ended", () => {
+      activeAudio = null;
+      finishPlayback = null;
+      resolve(true);
+    }, { once: true });
+    audio.addEventListener("error", () => {
+      activeAudio = null;
+      finishPlayback = null;
+      reject(new Error("audio playback failed"));
+    }, { once: true });
+    audio.play().catch(reject);
+  });
+}
+
+function speakInBrowser(text, speed) {
+  return new Promise((resolve) => {
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    activeUtterance = utterance;
+    finishPlayback = resolve;
+    utterance.lang = "en-US";
+    utterance.rate = { slow: 0.85, normal: 1, fast: 1.15 }[speed] || 1;
+    const voice = speechSynthesis.getVoices().find((item) => item.lang === "en-US");
+    if (voice) utterance.voice = voice;
+    const finish = (played) => {
+      activeUtterance = null;
+      finishPlayback = null;
+      resolve(played);
+    };
+    utterance.onend = () => finish(true);
+    utterance.onerror = () => finish(false);
+    speechSynthesis.speak(utterance);
+  });
+}
+
+async function speak(text, speed = "normal", options = {}) {
+  stopSpeaking();
+  try {
+    const params = new URLSearchParams({ text, speed });
+    if (options.voice) params.set("voice", options.voice);
+    const played = await playAudio(new Audio(`/api/tts/stream?${params}`));
+    if (played) return true;
+  } catch (_) {
+    // Browser voice remains an explicit en-US fallback.
+    stopSpeaking();
+  }
+  return speakInBrowser(text, speed);
+}
+
+function isSpeaking() {
+  return Boolean(activeAudio || activeUtterance);
+}
+
+window.speakBuddy = {
+  VoiceRecorder,
+  isSpeaking,
+  postJSON,
+  speak,
+  stopSpeaking,
+  uploadRecording
+};

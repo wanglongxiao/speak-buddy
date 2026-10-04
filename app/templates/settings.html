@@ -34,10 +34,29 @@
         {% endfor %}
       </select>
     </label>
-    <button class="btn btn-secondary" type="button"
-      onclick="window.speakBuddy.speak('Your brave voice gets stronger every time you use it.', '{{ user.default_speed }}')">
-      <i data-lucide="volume-2"></i>{{ t.preview_voice }}
-    </button>
+    <fieldset class="voice-picker">
+      <legend class="label">{{ t.buddy_voice }}</legend>
+      {% for gender in ["female", "male"] %}
+      <span class="voice-group-label">{{ t[gender + "_voices"] }}</span>
+      <div class="voice-options">
+        {% for voice in buddy_voices if voice.gender == gender %}
+        <label class="voice-option">
+          <input type="radio" name="buddy_voice" value="{{ voice.id }}"
+            {{ "checked" if user.buddy_voice == voice.id else "" }}>
+          <span>
+            <strong>{{ voice.name }}</strong>
+            <small>{{ voice.accent }} · {{ voice.style }}</small>
+          </span>
+          <button class="voice-preview" type="button"
+            title="{{ t.preview_voice }}" aria-label="{{ t.preview_voice }}: {{ voice.name }}"
+            onclick="event.preventDefault(); event.stopPropagation(); window.speakBuddy.speak('Your brave voice gets stronger every time you use it.', document.querySelector('[name=speed]').value, {voice: '{{ voice.id }}'})">
+            <i data-lucide="volume-2"></i>
+          </button>
+        </label>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </fieldset>
     <button class="btn btn-primary" type="submit">
       <i data-lucide="save"></i>{{ t.save }}
     </button>

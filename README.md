@@ -46,10 +46,10 @@ corrections.
 
 | Page | Purpose |
 | --- | --- |
-| **Home** (`/`) | Shows today's practice, XP, streak, and speaking time. A 5-to-1 countdown automatically opens the recommended topic. |
+| **Home** (`/`) | Shows today's practice, XP, streak, and speaking time. Starting the quest selects a random unfinished topic for the day. |
 | **Read Aloud** (`/warmup`) | Provides daily sentences for pronunciation, fluency, and confidence practice. Results are grouped so children can practise naturally before receiving feedback. |
 | **Topics** (`/topics`) | Lists AI-generated conversation topics and supports creating a custom topic by voice. |
-| **Topic Practice** (`/practice`) | Opens directly on the selected topic without a greeting or warm-up score. Each completed topic receives a five-dimension evaluation. |
+| **Topic Practice** (`/practice`) | Opens directly on the selected topic, streams the first question automatically, and listens for an interruptible spoken reply. Each completed topic receives a five-dimension evaluation. |
 | **Progress** (`/progress`) | Displays day, week, and month summaries, score trends, speaking activity, and an encouraging overall evaluation. |
 | **Parent View** (`/progress/parent`) | Provides a signed, print-friendly learning summary and share QR code for parents or guardians. |
 | **History** (`/history`) | Shows previous speaking turns, questions, transcripts, and coaching results for the active learner. |
@@ -64,8 +64,8 @@ workflow:
 | BytePlus Service | How SpeakBuddy Uses It |
 | --- | --- |
 | **ModelArk with DeepSeek V4.1 Flash** | Generates daily conversation topics and read-aloud content, creates custom topics from voice commands, and powers Buddy's structured coaching response. |
-| **Seed Speech ASR** | Converts a learner's uploaded recording into English text and returns confidence data used by the coaching and scoring pipeline. |
-| **Seed Speech TTS** | Synthesizes Buddy's replies and prompts with a consistent American-English voice at learner-selected speaking speeds. |
+| **Seed Speech ASR** | Streams topic-practice audio into English text with uploaded-recording fallback and confidence data for coaching and scoring. |
+| **Seed Speech TTS** | Streams Buddy's replies and prompts at learner-selected speaking speeds with six selectable English voices. |
 | **TOS Object Storage** | Stores uploaded recordings and generated TTS audio. Production objects can use a seven-day lifecycle policy for automatic cleanup. |
 | **veFaaS** | Runs the FastAPI application as a cloud function with a minimum of one and a maximum of two instances. |
 | **BytePlus API Gateway** | Exposes the veFaaS application through the public HTTPS Demo Site URL and routes browser traffic to the production function. |
@@ -76,11 +76,13 @@ committed to the repository.
 
 ## Speaking Flow
 
-1. Opening Home starts a 5-to-1 countdown and then opens the recommended topic.
-   Learners can also select or create a topic themselves.
-2. The selected topic opens immediately and Buddy reads its first question.
-3. The browser records the learner's topic answer and uploads the audio.
-4. TOS stores the recording and Seed Speech ASR transcribes it.
+1. Starting today's quest selects a random unfinished topic. Learners can also
+   select or create a topic themselves.
+2. The selected topic opens immediately and streams Buddy's first question.
+3. The browser begins streaming the learner's reply and stops Buddy when the
+   learner interrupts.
+4. Seed Speech ASR transcribes the live audio, with uploaded recordings as a
+   browser fallback.
 5. DeepSeek on ModelArk returns structured coaching with praise, one focused
    adjustment, a stronger rephrasing, suggested words, and scoring data.
 6. Seed Speech TTS reads Buddy's response aloud.
@@ -129,15 +131,15 @@ Set `MOCK_AI=true` for a fully local demo. With `MOCK_AI=false`, configure:
   cookies
 - `MODELARK_API_KEY`, `MODELARK_BASE_URL`, and `MAIN_AGENT_ENDPOINT`
 - `SPEECH_API_KEY`, Seed Speech ASR/TTS URLs, and resource IDs
-- `BYTEPLUS_TTS_VOICE`, which must be a verified `en-US` voice ID
+- `BYTEPLUS_TTS_VOICE`, which must be one of the verified English Buddy voice
+  IDs
 - BytePlus AK/SK, region, endpoint, and a public-readable TOS bucket
 - `APP_BASE_URL` with the externally accessible HTTPS application URL
 
 The app rejects a production configuration that uses the default session
-secret. It also rejects an unverified non-American Buddy voice. Provider errors
-can fall back locally, but the app never switches to a British or non-English
-voice. Configure a seven-day lifecycle policy for the TOS bucket in the
-BytePlus console.
+secret. It also rejects unverified Buddy voices. Provider errors can fall back
+locally, but the app does not switch to a non-English voice. Configure a
+seven-day lifecycle policy for the TOS bucket in the BytePlus console.
 
 ## Accounts and Data
 

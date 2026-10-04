@@ -1,9 +1,22 @@
+import asyncio
 import json
 from dataclasses import asdict
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session, col, select
 
 from app.compat import UTC
@@ -25,13 +38,15 @@ from app.models.schemas import (
     TTSRequest,
 )
 from app.services.auth import request_user
+from app.services.voices import DEFAULT_BUDDY_VOICE, valid_buddy_voice
 from app.skills.asr_skill import transcribe
+from app.skills.asr_skill.streaming import SeedASRStream
 from app.skills.coach_skill import coach
 from app.skills.gamify_skill import evaluate
 from app.skills.loud_skill import assess
 from app.skills.pronunciation_skill import grade
 from app.skills.tos_skill import resolve_audio, store_audio
-from app.skills.tts_skill import synthesize
+from app.skills.tts_skill import stream_speech, synthesize
 
 router = APIRouter(prefix="/api")
 
@@ -94,9 +109,118 @@ async def asr(payload: ASRRequest):
     return asdict(result)
 
 
+@router.websocket("/asr/stream")
+async def asr_stream(
+    websocket: WebSocket,
+    session: Session = Depends(get_session),
+):
+    request_user(websocket, session)
+    await websocket.accept()
+    if not get_settings().speech_enabled:
+        await websocket.send_json(
+            {"type": "unavailable", "detail": "Streaming ASR is not configured"}
+        )
+        await websocket.close(code=1013)
+        return
+
+    provider = SeedASRStream()
+    try:
+        await provider.connect()
+        await websocket.send_json({"type": "ready"})
+
+        async def send_audio() -> None:
+            while True:
+                message = await websocket.receive()
+                if message["type"] == "websocket.disconnect":
+                    raise WebSocketDisconnect(message.get("code", 1000))
+                audio = message.get("bytes")
+                if audio:
+                    if len(audio) > 65_536:
+                        raise ValueError("Audio chunk is too large")
+                    await provider.send_audio(audio)
+                    continue
+                if message.get("text"):
+                    command = json.loads(message["text"])
+                    if command.get("type") == "stop":
+                        await provider.finish()
+                        return
+
+        async def send_results() -> None:
+            while True:
+                result = await provider.receive()
+                if result.error:
+                    await websocket.send_json({"type": "error", "detail": result.error})
+                    return
+                if result.text:
+                    await websocket.send_json(
+                        {
+                            "type": "transcript",
+                            "text": result.text,
+                            "final": result.final,
+                        }
+                    )
+                if result.final:
+                    return
+
+        audio_task = asyncio.create_task(send_audio())
+        result_task = asyncio.create_task(send_results())
+        done, _ = await asyncio.wait(
+            {audio_task, result_task},
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        if audio_task in done and not result_task.done():
+            await asyncio.wait_for(result_task, timeout=6)
+        if result_task in done and not audio_task.done():
+            audio_task.cancel()
+        await websocket.close()
+    except (OSError, RuntimeError, ValueError, WebSocketDisconnect, TimeoutError):
+        try:
+            await websocket.send_json(
+                {"type": "unavailable", "detail": "Streaming ASR unavailable"}
+            )
+            await websocket.close(code=1011)
+        except RuntimeError:
+            pass
+    finally:
+        await provider.close()
+
+
+def user_voice(user: User) -> str:
+    return (
+        user.buddy_voice if valid_buddy_voice(user.buddy_voice) else DEFAULT_BUDDY_VOICE
+    )
+
+
 @router.post("/tts")
-async def tts(payload: TTSRequest):
-    return {"url": await synthesize(payload.text, payload.speed, payload.voice)}
+async def tts(
+    payload: TTSRequest,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    user = current_user(request, session)
+    voice = payload.voice or user_voice(user)
+    if not valid_buddy_voice(voice):
+        raise HTTPException(status_code=422, detail="Unsupported Buddy voice")
+    return {"url": await synthesize(payload.text, payload.speed, voice)}
+
+
+@router.get("/tts/stream")
+async def tts_stream(
+    request: Request,
+    text: str = Query(min_length=1, max_length=500),
+    speed: str = Query(default="normal", pattern="^(slow|normal|fast)$"),
+    voice: str = "",
+    session: Session = Depends(get_session),
+):
+    user = current_user(request, session)
+    selected = voice or user_voice(user)
+    if not valid_buddy_voice(selected):
+        raise HTTPException(status_code=422, detail="Unsupported Buddy voice")
+    return StreamingResponse(
+        stream_speech(text, speed, selected),
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.post("/coach")

@@ -4,6 +4,8 @@ from pathlib import Path
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.services.voices import DEFAULT_BUDDY_VOICE, valid_buddy_voice
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -35,7 +37,11 @@ class Settings(BaseSettings):
         "https://voice.ap-southeast-1.bytepluses.com/api/v3/tts/unidirectional"
     )
     byteplus_tts_resource_id: str = "seed-tts-1.0"
-    byteplus_tts_voice: str = "en_female_skye_emo_v2_mars_bigtts"
+    byteplus_tts_voice: str = DEFAULT_BUDDY_VOICE
+    byteplus_asr_stream_url: str = (
+        "wss://voice.ap-southeast-1.bytepluses.com/api/v3/sauc/bigmodel_async"
+    )
+    byteplus_asr_stream_resource_id: str = "volc.seedasr.sauc.duration"
 
     modelark_api_key: str = ""
     modelark_base_url: str = "https://ark.ap-southeast.bytepluses.com/api/v3"
@@ -47,15 +53,10 @@ class Settings(BaseSettings):
 
     @field_validator("byteplus_tts_voice")
     @classmethod
-    def require_american_voice(cls, value: str) -> str:
-        normalized = value.lower().replace("-", "_")
-        verified_en_us = {
-            "en_female_skye_emo_v2_mars_bigtts",
-        }
-        if not normalized.startswith("en_us") and normalized not in verified_en_us:
+    def require_supported_voice(cls, value: str) -> str:
+        if not valid_buddy_voice(value):
             raise ValueError(
-                "BYTEPLUS_TTS_VOICE must be a verified en-US voice; "
-                "British or non-English fallback is forbidden."
+                "BYTEPLUS_TTS_VOICE must be one of the supported English Buddy voices."
             )
         return value
 

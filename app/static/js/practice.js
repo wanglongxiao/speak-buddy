@@ -4,17 +4,21 @@ const {
   isSpeaking,
   postJSON,
   speak,
-  stopSpeaking
+  stopSpeaking,
+  unlockAudio
 } = window.speakBuddy;
 const { recordableState, registerPageRecorder, scrollToCurrentQuestion } =
   window.speakBuddyPage;
 const I = window.i18n;
 
-window.practiceApp = (topicId, questions, speed) => ({
+window.practiceApp = (topicId, questions, speed, buddyVoice) => ({
   ...recordableState(I.microphone_error, "turn"),
   topicId,
   questions,
   speed,
+  buddyVoice,
+  playbackTurn: 0,
+  destroyed: false,
   turn: 1,
   total: questions.length > 1 ? questions.length : 5,
   question: questions[0],
@@ -28,8 +32,24 @@ window.practiceApp = (topicId, questions, speed) => ({
   voiceMode: false,
   voiceStatus: "",
   audioBlocked: false,
-  speak(text, options = {}) {
-    return speak(text, this.speed, options);
+  async speak(text, options = {}) {
+    const turn = ++this.playbackTurn;
+    const listen = options.listen ?? this.voiceMode;
+    stopSpeaking();
+    await this.voice.cancel();
+    this.recording = false;
+    this.level = 0;
+    // Never delay the first prompt for microphone permission.
+    // Later turns retain the microphone and AudioContext created after that prompt.
+    if (this.destroyed || turn !== this.playbackTurn) return false;
+    this.voiceStatus = I.buddy_speaking;
+    const played = await speak(text, this.speed, { ...options, voice: this.buddyVoice });
+    if (this.destroyed || turn !== this.playbackTurn) return false;
+    this.audioBlocked = !played;
+    this.voiceStatus = "";
+    // Open recognition only after the entire prompt, avoiding speaker echo.
+    if (played && listen) await this.listenForReply();
+    return played;
   },
   init() {
     registerPageRecorder(this);
@@ -41,14 +61,12 @@ window.practiceApp = (topicId, questions, speed) => ({
       onLevel: (value) => {
         this.level = value;
       },
-      onSpeechStart: () => {
-        if (isSpeaking()) stopSpeaking();
-      },
       onTranscript: (text) => {
+        if (isSpeaking() || this.destroyed) return;
         this.transcript = text;
-        if (text && isSpeaking()) stopSpeaking();
       },
       onFinal: (text) => {
+        if (this.destroyed || isSpeaking()) return;
         this.recording = false;
         this.level = 0;
         if (text) this.processTranscript(text, 0.86);
@@ -60,7 +78,7 @@ window.practiceApp = (topicId, questions, speed) => ({
       }
     });
     if (new URLSearchParams(window.location.search).get("autoplay") === "1") {
-      this.askQuestion();
+      this.askQuestion(false);
     }
   },
   async listenForReply() {
@@ -69,27 +87,18 @@ window.practiceApp = (topicId, questions, speed) => ({
     this.voiceMode = Boolean(provider);
     return this.voiceMode;
   },
-  async askQuestion() {
+  async askQuestion(unlock = true) {
+    if (unlock) unlockAudio();
     this.audioBlocked = false;
-    this.voiceStatus = I.buddy_speaking;
-    let listening = Promise.resolve(false);
-    const played = await this.speak(this.question, {
-      onStart: () => {
-        listening = this.listenForReply();
-      }
-    });
-    if (!played) {
-      this.audioBlocked = true;
-      this.voiceStatus = "";
-      return false;
-    }
-    await listening;
-    if (this.voiceMode && this.recording) this.voiceStatus = I.listening;
-    return true;
+    return await this.speak(this.question, { listen: true });
   },
   async start() {
     if (this.busy || this.complete) return false;
+    if (this.recording) return true;
+    stopSpeaking();
+    this.playbackTurn += 1;
     this.result = null;
+    await this.voice.cancel();
     if (this.voiceMode) {
       if (this.recording) return true;
       return await this.listenForReply();
@@ -151,7 +160,7 @@ window.practiceApp = (topicId, questions, speed) => ({
   async continueConversation() {
     if (this.turn >= this.total) {
       this.voiceStatus = I.buddy_speaking;
-      await this.speak(this.result.praise);
+      await this.speak(this.result.praise, { listen: false });
       await this.completeQuest();
       return;
     }
@@ -161,11 +170,7 @@ window.practiceApp = (topicId, questions, speed) => ({
       : this.result.follow_up_question;
     scrollToCurrentQuestion();
     this.voiceStatus = I.buddy_speaking;
-    const playback = this.speak(`${this.result.praise} ${this.question}`);
-    const listening = this.listenForReply();
-    await playback;
-    await listening;
-    if (this.voiceMode && this.recording) this.voiceStatus = I.listening;
+    await this.speak(`${this.result.praise} ${this.question}`, { listen: true });
   },
   echo() {
     this.speak(this.result.ideal_rephrase);
@@ -197,12 +202,16 @@ window.practiceApp = (topicId, questions, speed) => ({
     if (navigator.vibrate) navigator.vibrate(150);
   },
   async endEarly() {
+    this.destroyed = true;
+    this.playbackTurn += 1;
     stopSpeaking();
     await this.voice.shutdown();
     await postJSON("/api/quest/end", { topic_id: this.topicId });
     location.href = "/";
   },
   destroy() {
+    this.destroyed = true;
+    this.playbackTurn += 1;
     stopSpeaking();
     this.voice.shutdown();
   }

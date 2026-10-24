@@ -77,7 +77,7 @@ async def stream_speech(
 
 
 async def synthesize(text: str, speed: str = "normal", voice: str = "") -> str:
-    """Synthesize a supported English voice; the browser is the last fallback."""
+    """Synthesize a complete audio file with the selected English voice."""
     settings = get_settings()
     voice = selected_voice(voice)
 

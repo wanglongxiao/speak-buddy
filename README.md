@@ -79,8 +79,8 @@ committed to the repository.
 1. Starting today's quest selects a random unfinished topic. Learners can also
    select or create a topic themselves.
 2. The selected topic opens immediately and streams Buddy's first question.
-3. The browser begins streaming the learner's reply and stops Buddy when the
-   learner interrupts.
+3. Once Buddy finishes the full question, the browser starts recognizing the
+   learner's reply. The microphone button can interrupt playback.
 4. Seed Speech ASR transcribes the live audio, with uploaded recordings as a
    browser fallback.
 5. DeepSeek on ModelArk returns structured coaching with praise, one focused
@@ -138,8 +138,9 @@ Set `MOCK_AI=true` for a fully local demo. With `MOCK_AI=false`, configure:
 - `APP_BASE_URL` with the externally accessible HTTPS application URL
 
 The app rejects a production configuration that uses the default session
-secret. It also rejects unverified Buddy voices. Provider errors can fall back
-locally, but the app does not switch to a non-English voice. Configure a
+secret. It also rejects unverified Buddy voices. Failed audio streams retry a
+complete audio file with the same selected voice. Interrupted playback never
+switches to browser system speech. Configure a
 seven-day lifecycle policy for the TOS bucket in the BytePlus console.
 
 ## Accounts and Data
@@ -159,11 +160,14 @@ database.
 pytest
 ruff check app
 black --check app tests
+node --test tests/audio-regression.cjs
 ```
 
 The test suite covers application routes, account and profile isolation, daily
 content releases, grouped scoring, ASR, TTS, AI coaching, topics, difficulty,
 gamification, loud-time tracking, pronunciation, and TOS fallback behavior.
+Audio regressions cover first playback, five conversation turns, interruption,
+same-voice retries, and microphone reuse.
 
 ## Project Structure
 

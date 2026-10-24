@@ -85,8 +85,9 @@ async function postJSON(url, payload) {
 }
 
 let activeAudio = null;
-let activeUtterance = null;
 let finishPlayback = null;
+let speechGeneration = 0;
+let audioUnlock = Promise.resolve(true);
 const speechAudio = new Audio();
 speechAudio.preload = "auto";
 speechAudio.playsInline = true;
@@ -121,25 +122,22 @@ function unlockAudio() {
   const url = silentWavUrl();
   speechAudio.src = url;
   const playback = speechAudio.play();
-  return Promise.resolve(playback)
+  audioUnlock = Promise.resolve(playback)
     .then(() => true)
     .catch(() => false)
     .finally(() => URL.revokeObjectURL(url));
+  return audioUnlock;
 }
 
 function stopSpeaking() {
+  speechGeneration += 1;
   const audio = activeAudio;
-  const utterance = activeUtterance;
   const finish = finishPlayback;
   if (finish) finish(false);
   if (audio) {
     audio.pause();
     audio.removeAttribute("src");
     audio.load();
-  }
-  if (utterance) {
-    speechSynthesis.cancel();
-    activeUtterance = null;
   }
 }
 
@@ -179,28 +177,6 @@ function playAudio(audio, onStart) {
   });
 }
 
-function speakInBrowser(text, speed, onStart) {
-  return new Promise((resolve) => {
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    activeUtterance = utterance;
-    finishPlayback = resolve;
-    utterance.lang = "en-US";
-    utterance.rate = { slow: 0.85, normal: 1, fast: 1.15 }[speed] || 1;
-    const voice = speechSynthesis.getVoices().find((item) => item.lang === "en-US");
-    if (voice) utterance.voice = voice;
-    const finish = (played) => {
-      activeUtterance = null;
-      finishPlayback = null;
-      resolve(played);
-    };
-    utterance.onend = () => finish(true);
-    utterance.onerror = () => finish(false);
-    onStart?.();
-    speechSynthesis.speak(utterance);
-  });
-}
-
 function isAutoplayBlocked(error) {
   const detail = `${error?.name || ""} ${error?.message || ""}`;
   return error?.name === "NotAllowedError"
@@ -209,25 +185,41 @@ function isAutoplayBlocked(error) {
 
 async function speak(text, speed = "normal", options = {}) {
   stopSpeaking();
+  const generation = speechGeneration;
+  const voice = options.voice || window.userBuddyVoice || "";
+  await audioUnlock;
+  if (generation !== speechGeneration) return false;
   try {
     const params = new URLSearchParams({ text, speed });
-    if (options.voice) params.set("voice", options.voice);
+    if (voice) params.set("voice", voice);
     speechAudio.src = `/api/tts/stream?${params}`;
-    const played = await playAudio(speechAudio, options.onStart);
-    if (played) return true;
+    return await playAudio(speechAudio, options.onStart);
   } catch (error) {
+    if (generation !== speechGeneration) return false;
     if (isAutoplayBlocked(error)) {
       window.dispatchEvent(new CustomEvent("speakbuddy:autoplay-blocked"));
       return false;
     }
-    // Browser voice remains an explicit en-US fallback.
-    stopSpeaking();
+    // Retry a complete audio file with the same voice; cancellation is not failure.
+    try {
+      const result = await postJSON("/api/tts", { text, speed, voice });
+      if (generation !== speechGeneration) return false;
+      if (!result.url) throw new Error("TTS unavailable");
+      speechAudio.src = result.url;
+      return await playAudio(speechAudio, options.onStart);
+    } catch (retryError) {
+      if (generation !== speechGeneration) return false;
+      window.dispatchEvent(new CustomEvent(
+        isAutoplayBlocked(retryError)
+          ? "speakbuddy:autoplay-blocked" : "speakbuddy:audio-error"
+      ));
+      return false;
+    }
   }
-  return speakInBrowser(text, speed, options.onStart);
 }
 
 function isSpeaking() {
-  return Boolean(activeAudio || activeUtterance);
+  return Boolean(activeAudio);
 }
 
 window.speakBuddy = {

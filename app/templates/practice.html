@@ -2,7 +2,7 @@
 {% block title %}{{ t.practice_title }} · {{ t.brand }}{% endblock %}
 {% block content %}
 <section
-  x-data='practiceApp({{ topic.id }}, {{ topic_questions|tojson }}, {{ user.default_speed|tojson }})'
+  x-data='practiceApp({{ topic.id }}, {{ topic_questions|tojson }}, {{ user.default_speed|tojson }}, {{ user.buddy_voice|tojson }})'
   class="stack practice-page"
 >
   <div class="hero">

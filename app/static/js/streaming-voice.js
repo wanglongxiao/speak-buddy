@@ -6,18 +6,22 @@ class StreamingVoiceRecognizer {
     this.active = false;
     this.finalized = false;
     this.transcript = "";
+    this.generation = 0;
   }
 
   async start() {
-    await this.cancel();
+    this.cancel();
+    const generation = this.generation;
     this.active = true;
     this.finalized = false;
     this.transcript = "";
     if (!this.backendUnavailable && window.WebSocket && window.AudioContext) {
       try {
-        await this.startSeedStream();
+        await this.startSeedStream(generation);
+        if (generation !== this.generation) return "";
         return "seed";
       } catch (_) {
+        if (generation !== this.generation) return "";
         this.backendUnavailable = true;
         this.socket?.close();
         this.socket = null;
@@ -30,16 +34,9 @@ class StreamingVoiceRecognizer {
     return "";
   }
 
-  async startSeedStream() {
-    if (!this.mediaStream || this.mediaStream.getTracks().every((track) => track.readyState === "ended")) {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          autoGainControl: true,
-          echoCancellation: true,
-          noiseSuppression: true
-        }
-      });
-    }
+  async startSeedStream(generation) {
+    await this.prepare();
+    if (generation !== this.generation) throw new Error("ASR cancelled");
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
     const socket = new WebSocket(`${scheme}//${location.host}/api/asr/stream`);
     socket.binaryType = "arraybuffer";
@@ -52,13 +49,18 @@ class StreamingVoiceRecognizer {
         reject(new Error("ASR connection failed"));
       };
       socket.onmessage = (event) => {
+        if (this.socket !== socket || !this.active) {
+          window.clearTimeout(timeout);
+          reject(new Error("ASR cancelled"));
+          return;
+        }
         const message = JSON.parse(event.data);
         if (message.type === "ready") {
           window.clearTimeout(timeout);
           this.attachPCMStream();
           this.callbacks.onReady?.("seed");
           socket.onclose = () => {
-            if (this.active && !this.finalized && !this.stopping) {
+            if (this.socket === socket && this.active && !this.finalized && !this.stopping) {
               this.active = false;
               this.callbacks.onUnavailable?.();
             }
@@ -76,8 +78,33 @@ class StreamingVoiceRecognizer {
     });
   }
 
+  async prepare() {
+    if (this.preparing) return this.preparing;
+    this.preparing = this.prepareMedia();
+    try {
+      await this.preparing;
+    } finally {
+      this.preparing = null;
+    }
+  }
+
+  async prepareMedia() {
+    if (!this.mediaStream || this.mediaStream.getTracks().every((track) => track.readyState === "ended")) {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          autoGainControl: true,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      });
+    }
+    if (!this.audioContext || this.audioContext.state === "closed") {
+      this.audioContext = new AudioContext();
+    }
+    if (this.audioContext.state === "suspended") await this.audioContext.resume();
+  }
+
   attachPCMStream() {
-    this.audioContext = new AudioContext();
     this.source = this.audioContext.createMediaStreamSource(this.mediaStream);
     this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
     this.silentGain = this.audioContext.createGain();
@@ -133,9 +160,14 @@ class StreamingVoiceRecognizer {
     recognition.lang = "en-US";
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.onstart = () => this.callbacks.onReady?.("browser");
-    recognition.onspeechstart = () => this.callbacks.onSpeechStart?.();
+    recognition.onstart = () => {
+      if (this.recognition === recognition && this.active) this.callbacks.onReady?.("browser");
+    };
+    recognition.onspeechstart = () => {
+      if (this.recognition === recognition && this.active) this.callbacks.onSpeechStart?.();
+    };
     recognition.onresult = (event) => {
+      if (this.recognition !== recognition || !this.active) return;
       let text = "";
       let final = false;
       for (let index = 0; index < event.results.length; index += 1) {
@@ -144,9 +176,11 @@ class StreamingVoiceRecognizer {
       }
       this.handleTranscript({ type: "transcript", text: text.trim(), final });
     };
-    recognition.onerror = () => this.callbacks.onUnavailable?.();
+    recognition.onerror = () => {
+      if (this.recognition === recognition && this.active) this.callbacks.onUnavailable?.();
+    };
     recognition.onend = () => {
-      if (this.active && this.transcript) this.finish(this.transcript);
+      if (this.recognition === recognition && this.active && this.transcript) this.finish(this.transcript);
     };
     try {
       recognition.start();
@@ -157,7 +191,7 @@ class StreamingVoiceRecognizer {
   }
 
   handleTranscript(message) {
-    if (message.type !== "transcript" || !message.text) return;
+    if (!this.active || this.finalized || message.type !== "transcript" || !message.text) return;
     this.transcript = message.text.trim();
     this.callbacks.onTranscript?.(this.transcript, Boolean(message.final));
     if (message.final) this.finish(this.transcript);
@@ -168,8 +202,10 @@ class StreamingVoiceRecognizer {
     this.finalized = true;
     this.active = false;
     this.disconnectCapture();
+    const socket = this.socket;
+    this.socket = null;
+    socket?.close();
     this.callbacks.onFinal?.(text);
-    this.socket?.close();
   }
 
   async stop() {
@@ -184,6 +220,7 @@ class StreamingVoiceRecognizer {
   }
 
   async cancel() {
+    this.generation += 1;
     this.active = false;
     this.finalized = true;
     this.disconnectCapture();
@@ -198,21 +235,22 @@ class StreamingVoiceRecognizer {
     this.source?.disconnect();
     this.processor?.disconnect();
     this.silentGain?.disconnect();
-    this.audioContext?.close();
     this.source = null;
     this.processor = null;
     this.silentGain = null;
-    this.audioContext = null;
   }
 
   async releaseMedia() {
     this.disconnectCapture();
     this.mediaStream?.getTracks().forEach((track) => track.stop());
     this.mediaStream = null;
+    await this.audioContext?.close();
+    this.audioContext = null;
   }
 
   async shutdown() {
     await this.cancel();
+    await this.preparing?.catch(() => {});
     await this.releaseMedia();
   }
 }

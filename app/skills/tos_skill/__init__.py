@@ -20,6 +20,28 @@ def _extension(filename: str) -> str:
     return suffix if suffix in {".webm", ".wav", ".mp3", ".m4a", ".ogg"} else ".webm"
 
 
+def audio_url(key: str) -> str:
+    """Issue a fresh, short-lived read URL for audio in a private bucket."""
+    settings = get_settings()
+    if settings.tos_enabled:
+        import tos
+
+        client = tos.TosClientV2(
+            settings.byteplus_ak,
+            settings.byteplus_sk,
+            settings.tos_endpoint,
+            settings.tos_region,
+        )
+        return client.pre_signed_url(
+            tos.HttpMethodType.Http_Method_Get,
+            settings.tos_bucket,
+            key,
+            expires=3600,
+        ).signed_url
+    host = settings.tos_endpoint.removeprefix("https://").rstrip("/")
+    return f"https://{settings.tos_bucket}.{host}/{key}"
+
+
 def store_audio(data: bytes, filename: str, content_type: str) -> StoredAudio:
     """Prefer TOS but make a complete local quest possible during outages."""
     settings = get_settings()
@@ -40,9 +62,7 @@ def store_audio(data: bytes, filename: str, content_type: str) -> StoredAudio:
                 content=data,
                 content_type=content_type,
             )
-            host = settings.tos_endpoint.removeprefix("https://").rstrip("/")
-            url = f"https://{settings.tos_bucket}.{host}/{key}"
-            return StoredAudio(key, url, None, "tos")
+            return StoredAudio(key, audio_url(key), None, "tos")
         except Exception:
             pass
 

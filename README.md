@@ -133,7 +133,8 @@ Set `MOCK_AI=true` for a fully local demo. With `MOCK_AI=false`, configure:
 - `SPEECH_API_KEY`, Seed Speech ASR/TTS URLs, and resource IDs
 - `BYTEPLUS_TTS_VOICE`, which must be one of the verified English Buddy voice
   IDs
-- BytePlus AK/SK, region, endpoint, and a public-readable TOS bucket
+- BytePlus AK/SK, region, endpoint, and a TOS bucket. Audio uses signed read
+  URLs valid for one hour, so the bucket can remain private.
 - `APP_BASE_URL` with the externally accessible HTTPS application URL
 
 The app rejects a production configuration that uses the default session

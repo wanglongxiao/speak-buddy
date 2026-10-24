@@ -45,6 +45,7 @@ from app.skills.coach_skill import coach
 from app.skills.gamify_skill import evaluate
 from app.skills.loud_skill import assess
 from app.skills.pronunciation_skill import grade
+from app.skills.tos_skill import audio_url as tos_audio_url
 from app.skills.tos_skill import resolve_audio, store_audio
 from app.skills.tts_skill import stream_speech, synthesize
 
@@ -59,9 +60,7 @@ def audio_url(key: str) -> str:
     local = resolve_audio(key)
     if local:
         return local.url
-    settings = get_settings()
-    host = settings.tos_endpoint.removeprefix("https://").rstrip("/")
-    return f"https://{settings.tos_bucket}.{host}/{key}"
+    return tos_audio_url(key)
 
 
 def award_badges(session: Session, user_id: int, codes: list[str]) -> None:

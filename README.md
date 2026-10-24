@@ -132,7 +132,7 @@ Set `MOCK_AI=true` for a fully local demo. With `MOCK_AI=false`, configure:
 - `MODELARK_API_KEY`, `MODELARK_BASE_URL`, and `MAIN_AGENT_ENDPOINT`
 - `SPEECH_API_KEY`, Seed Speech ASR/TTS URLs, and resource IDs
 - `BYTEPLUS_TTS_VOICE`, which must be one of the verified English Buddy voice
-  IDs
+  IDs; the default is Candice (`en_female_candice_emo_v2_mars_bigtts`)
 - BytePlus AK/SK, region, endpoint, and a TOS bucket. Audio uses signed read
   URLs valid for one hour, so the bucket can remain private.
 - `APP_BASE_URL` with the externally accessible HTTPS application URL

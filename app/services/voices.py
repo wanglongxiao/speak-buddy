@@ -54,7 +54,7 @@ BUDDY_VOICES = (
     ),
 )
 
-DEFAULT_BUDDY_VOICE = BUDDY_VOICES[0].id
+DEFAULT_BUDDY_VOICE = "en_female_candice_emo_v2_mars_bigtts"
 BUDDY_VOICE_IDS = frozenset(voice.id for voice in BUDDY_VOICES)
 
 

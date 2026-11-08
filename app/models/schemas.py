@@ -156,8 +156,14 @@ class LoudRecordRequest(BaseModel):
 
 class CoachRequest(BaseModel):
     topic_id: int = 1
-    question: str
-    transcript: str
-    history: list[dict[str, str]] = Field(default_factory=list)
+    conversation_id: str = Field(default="", max_length=64, pattern=r"^[A-Za-z0-9_-]*$")
+    question: str = Field(max_length=1000)
+    transcript: str = Field(max_length=5000)
+    history: list[dict[str, str]] = Field(default_factory=list, max_length=40)
     user_profile: dict[str, str] = Field(default_factory=dict)
     asr_confidence: float = Field(default=0.8, ge=0, le=1)
+
+
+class QuestRequest(BaseModel):
+    topic_id: int | None = None
+    conversation_id: str = Field(default="", max_length=64, pattern=r"^[A-Za-z0-9_-]*$")

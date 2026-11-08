@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import hashlib
 import json
@@ -26,7 +28,6 @@ def request_headers() -> dict[str, str]:
     return {
         "X-Api-Key": settings.speech_api_key,
         "X-Api-Resource-Id": settings.byteplus_tts_resource_id,
-        "X-Api-App-Key": "aGjiRDfUWi",
         "X-Api-Request-Id": str(uuid4()),
         "Content-Type": "application/json",
     }
@@ -76,7 +77,9 @@ async def stream_speech(
         return
 
 
-async def synthesize(text: str, speed: str = "normal", voice: str = "") -> str:
+async def synthesize(
+    text: str, speed: str = "normal", voice: str = "", owner_id: int | None = None
+) -> str:
     """Synthesize a complete audio file with the selected English voice."""
     settings = get_settings()
     voice = selected_voice(voice)
@@ -112,6 +115,7 @@ async def synthesize(text: str, speed: str = "normal", voice: str = "") -> str:
                 bytes(chunks),
                 output.name,
                 "audio/mpeg",
+                owner_id,
             )
             return stored.url
     except (httpx.HTTPError, ValueError, json.JSONDecodeError):

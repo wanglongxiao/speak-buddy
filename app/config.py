@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     byteplus_ak: str = ""
     byteplus_sk: str = ""
+    storage_backend: str = "local"
     tos_region: str = "ap-southeast-1"
     tos_bucket: str = ""
     tos_endpoint: str = "https://tos-ap-southeast-1.bytepluses.com"
@@ -83,6 +84,7 @@ class Settings(BaseSettings):
     def tos_enabled(self) -> bool:
         return bool(
             not self.mock_ai
+            and self.storage_backend == "tos"
             and self.byteplus_ak
             and self.byteplus_sk
             and self.tos_bucket

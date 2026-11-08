@@ -39,6 +39,8 @@ async def create_topic(raw_text: str, difficulty: str = "normal") -> TopicCard:
     client = AsyncOpenAI(
         api_key=settings.modelark_api_key,
         base_url=settings.modelark_base_url,
+        timeout=35,
+        max_retries=0,
     )
     try:
         response = await client.chat.completions.create(
@@ -60,6 +62,8 @@ async def create_topic(raw_text: str, difficulty: str = "normal") -> TopicCard:
         )
     except Exception:
         return fallback_topic(raw_text, level)
+    finally:
+        await client.close()
 
 
 def match_voice_command(transcript: str) -> tuple[str, dict[str, str]]:

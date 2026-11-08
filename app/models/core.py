@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date as Date
 from datetime import datetime
+from uuid import uuid4
 
 from sqlmodel import Field, SQLModel
 
@@ -17,6 +18,7 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
+    identity_key: str = Field(default_factory=lambda: uuid4().hex, index=True)
     username: str | None = Field(default=None, index=True)
     password_hash: str | None = None
     nickname: str = "Star Speaker"
@@ -51,6 +53,7 @@ class PracticeSession(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id")
     topic_id: int | None = Field(default=None, foreign_key="topics.id")
+    conversation_id: str = Field(default="", index=True)
     started_at: datetime = Field(default_factory=utcnow)
     finished_at: datetime | None = None
     difficulty: str = "normal"

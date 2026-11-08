@@ -54,7 +54,7 @@ def progress(request: Request, session: Session = Depends(get_session)):
 def parent(request: Request, session: Session = Depends(get_session)):
     shared_user = parent_share_user(request.query_params.get("share"), session)
     context = progress_context(request, session, shared_user)
-    share = signed_token("parent", context["user"].id or 0)
+    share = signed_token("parent", context["user"].identity_key)
     share_url = f"{get_settings().app_base_url}/progress/parent?share={share}"
     qr = qrcode.make(share_url)
     buffer = io.BytesIO()

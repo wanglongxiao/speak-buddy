@@ -38,7 +38,11 @@ def assess(
     """Count active speech while treating unknown volume as neutral."""
     measured_rms, measured_ms = rms, duration_ms
     if wav_path and wav_path.exists() and (rms <= 0 or duration_ms <= 0):
-        measured_rms, measured_ms = measure_wav(wav_path)
+        try:
+            measured_rms, measured_ms = measure_wav(wav_path)
+        except (wave.Error, EOFError, OSError):
+            # Browser uploads are often WebM, whose volume comes from the UI.
+            pass
     is_quiet = 0 < measured_rms < QUIET_RMS
     counted = round(measured_ms / 1000) if measured_rms >= QUIET_RMS else 0
     return LoudResult(

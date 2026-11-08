@@ -28,7 +28,7 @@ def _redirect_with_cookie(user: User) -> RedirectResponse:
     response = RedirectResponse("/", status_code=303)
     response.set_cookie(
         SESSION_COOKIE,
-        signed_token("session", user.id or 0),
+        signed_token("session", user.identity_key),
         max_age=SESSION_SECONDS,
         httponly=True,
         samesite="lax",

@@ -7,13 +7,14 @@ import re
 import secrets
 import time
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.models import User
 
 SESSION_COOKIE = "speakbuddy_session"
+VISITOR_COOKIE = "speakbuddy_visitor"
 SESSION_SECONDS = 60 * 60 * 24 * 30
 PBKDF2_ROUNDS = 210_000
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
@@ -57,12 +58,12 @@ def _signature(payload: str) -> str:
     return hmac.new(secret, payload.encode(), hashlib.sha256).hexdigest()
 
 
-def signed_token(scope: str, user_id: int, ttl: int = SESSION_SECONDS) -> str:
+def signed_token(scope: str, user_id: int | str, ttl: int = SESSION_SECONDS) -> str:
     payload = f"{scope}:{user_id}:{int(time.time()) + ttl}"
     return f"{payload}.{_signature(payload)}"
 
 
-def token_user_id(token: str | None, scope: str) -> int | None:
+def token_subject(token: str | None, scope: str) -> str | None:
     if not token:
         return None
     try:
@@ -72,9 +73,24 @@ def token_user_id(token: str | None, scope: str) -> int | None:
             return None
         if not hmac.compare_digest(signature, _signature(payload)):
             return None
-        return int(user_id)
+        return user_id
     except (ValueError, TypeError):
         return None
+
+
+def token_user_id(token: str | None, scope: str) -> int | None:
+    subject = token_subject(token, scope)
+    try:
+        return int(subject) if subject else None
+    except ValueError:
+        return None
+
+
+def token_user(token: str | None, scope: str, session: Session) -> User | None:
+    identity = token_subject(token, scope)
+    if not identity or not re.fullmatch(r"[a-f0-9]{32}", identity):
+        return None
+    return session.exec(select(User).where(User.identity_key == identity)).first()
 
 
 def guest_user(session: Session) -> User:
@@ -88,13 +104,20 @@ def guest_user(session: Session) -> User:
 
 
 def request_user(request: Request, session: Session) -> User:
-    user_id = token_user_id(request.cookies.get(SESSION_COOKIE), "session")
-    user = session.get(User, user_id) if user_id else None
+    user = token_user(request.cookies.get(SESSION_COOKIE), "session", session)
     if user and user.username:
         return user
-    return guest_user(session)
+    visitor_token = (
+        getattr(request.state, "visitor_token", None)
+        or request.cookies.get(VISITOR_COOKIE)
+    )
+    visitor = token_user(visitor_token, "visitor", session)
+    if visitor and not visitor.username:
+        return visitor
+    raise HTTPException(
+        status_code=401, detail="Open the Web UI to start a visitor session"
+    )
 
 
 def parent_share_user(token: str | None, session: Session) -> User | None:
-    user_id = token_user_id(token, "parent")
-    return session.get(User, user_id) if user_id else None
+    return token_user(token, "parent", session)

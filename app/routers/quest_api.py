@@ -9,7 +9,9 @@ from sqlmodel import Session, col, select
 from app.compat import UTC
 from app.db import get_session
 from app.models import PracticeSession, Turn
+from app.models.schemas import QuestRequest
 from app.routers.api import award_badges, current_user
+from app.services.concurrency import serialized_write
 from app.services.evaluation import evaluate_topic_turns, save_evaluation
 from app.skills.gamify_skill import evaluate
 
@@ -17,11 +19,12 @@ router = APIRouter(prefix="/api")
 
 
 def _active_session(
-    session: Session, user_id: int, topic_id: int | None
+    session: Session, user_id: int, topic_id: int | None, conversation_id: str = ""
 ) -> PracticeSession | None:
     statement = select(PracticeSession).where(
         PracticeSession.user_id == user_id,
         PracticeSession.finished_at.is_(None),
+        PracticeSession.conversation_id == conversation_id,
     )
     if topic_id is not None:
         statement = statement.where(PracticeSession.topic_id == topic_id)
@@ -31,14 +34,16 @@ def _active_session(
 
 
 @router.post("/quest/complete")
+@serialized_write
 def quest_complete(
     request: Request,
-    payload: dict[str, int] | None = None,
+    payload: QuestRequest,
     session: Session = Depends(get_session),
 ):
     user = current_user(request, session)
-    topic_id = (payload or {}).get("topic_id")
-    active = _active_session(session, user.id or 0, topic_id)
+    active = _active_session(
+        session, user.id or 0, payload.topic_id, payload.conversation_id
+    )
     if not active:
         return {
             **asdict(evaluate("none", {"total_xp": user.total_xp})),
@@ -75,16 +80,18 @@ def quest_complete(
 
 
 @router.post("/quest/end")
+@serialized_write
 def quest_end(
     request: Request,
-    payload: dict[str, int] | None = None,
+    payload: QuestRequest,
     session: Session = Depends(get_session),
 ):
     user = current_user(request, session)
     active = _active_session(
         session,
         user.id or 0,
-        (payload or {}).get("topic_id"),
+        payload.topic_id,
+        payload.conversation_id,
     )
     if active:
         active.finished_at = datetime.now(UTC)

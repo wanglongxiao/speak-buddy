@@ -108,6 +108,8 @@ async def coach(
     client = AsyncOpenAI(
         api_key=settings.modelark_api_key,
         base_url=settings.modelark_base_url,
+        timeout=35,
+        max_retries=0,
     )
     try:
         response = await client.chat.completions.create(
@@ -124,3 +126,5 @@ async def coach(
         return CoachResult.model_validate_json(content)
     except (ValidationError, json.JSONDecodeError, IndexError, Exception):
         return fallback_coach(transcript, confidence, difficulty, question)
+    finally:
+        await client.close()

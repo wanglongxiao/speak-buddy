@@ -1,5 +1,6 @@
 import json
 from collections.abc import Generator
+from uuid import uuid4
 
 from sqlalchemy import event, inspect, text
 from sqlalchemy.engine import Engine
@@ -128,6 +129,35 @@ def migrate_schema() -> None:
         else set()
     )
     with engine.begin() as connection:
+        if "identity_key" not in columns:
+            connection.execute(text(
+                "ALTER TABLE users ADD COLUMN identity_key VARCHAR"
+            ))
+        missing = connection.execute(text(
+            "SELECT id FROM users WHERE identity_key IS NULL OR identity_key = ''"
+        )).all()
+        for row in missing:
+            connection.execute(
+                text("UPDATE users SET identity_key = :key WHERE id = :id"),
+                {"key": uuid4().hex, "id": row[0]},
+            )
+        connection.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ux_users_identity_key "
+            "ON users(identity_key)"
+        ))
+        if "sessions" in tables:
+            session_columns = {
+                item["name"] for item in inspect(engine).get_columns("sessions")
+            }
+            if "conversation_id" not in session_columns:
+                connection.execute(text(
+                    "ALTER TABLE sessions ADD COLUMN "
+                    "conversation_id VARCHAR NOT NULL DEFAULT ''"
+                ))
+            connection.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_sessions_conversation_id "
+                "ON sessions(conversation_id)"
+            ))
         if "username" not in columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN username VARCHAR"))
         if "password_hash" not in columns:

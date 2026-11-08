@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session
 
 from app.config import ROOT, get_settings
 from app.db import engine, init_db
+from app.models import User
 from app.routers import (
     api,
     auth_pages,
@@ -17,6 +19,12 @@ from app.routers import (
     quest_api,
     settings_pages,
     topic_api,
+)
+from app.services.auth import (
+    SESSION_SECONDS,
+    VISITOR_COOKIE,
+    signed_token,
+    token_user,
 )
 from app.services.daily_content import cleanup_expired_content
 
@@ -31,6 +39,40 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="SpeakBuddy", version="0.1.0", lifespan=lifespan)
+
+
+def new_visitor_token() -> str:
+    with Session(engine) as session:
+        user = User(nickname="Guest")
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        return signed_token("visitor", user.identity_key)
+
+
+def valid_visitor(token) -> bool:
+    with Session(engine) as session:
+        user = token_user(token, "visitor", session)
+        return bool(user and not user.username)
+
+
+@app.middleware("http")
+async def visitor_identity(request, call_next):
+    token = request.cookies.get(VISITOR_COOKIE)
+    issue_cookie = False
+    if not request.url.path.startswith(("/static/", "/audio/", "/health")):
+        if not await run_in_threadpool(valid_visitor, token):
+            token = await run_in_threadpool(new_visitor_token)
+            issue_cookie = True
+        request.state.visitor_token = token
+    response = await call_next(request)
+    if issue_cookie:
+        response.set_cookie(
+            VISITOR_COOKIE, token, max_age=SESSION_SECONDS,
+            httponly=True, samesite="lax",
+            secure=get_settings().app_env == "production",
+        )
+    return response
 app.mount("/static", StaticFiles(directory=ROOT / "app" / "static"), name="static")
 audio_dir = get_settings().audio_dir
 audio_dir.mkdir(parents=True, exist_ok=True)

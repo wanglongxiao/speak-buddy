@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session
 
 from app.db import get_session
@@ -17,10 +18,16 @@ async def topic_from_voice(
     request: Request,
     session: Session = Depends(get_session),
 ):
-    user = current_user(request, session)
-    card = await create_topic(payload.get("raw_text", ""), user.default_difficulty)
+    user = await run_in_threadpool(current_user, request, session)
+    user_id, difficulty = user.id, user.default_difficulty
+    session.rollback()
+    card = await create_topic(payload.get("raw_text", "")[:2000], difficulty)
+    return await run_in_threadpool(save_topic, session, card, user_id)
+
+
+def save_topic(session, card, user_id):
     topic = Topic(
-        owner_user_id=user.id,
+        owner_user_id=user_id,
         title=card.title,
         difficulty=card.difficulty,
         starter_question=card.starter_question,
@@ -32,7 +39,7 @@ async def topic_from_voice(
     session.add(topic)
     session.commit()
     session.refresh(topic)
-    award_badges(session, user.id or 1, ["topic-creator"])
+    award_badges(session, user_id, ["topic-creator"])
     session.commit()
     return {**card.model_dump(), "id": topic.id}
 

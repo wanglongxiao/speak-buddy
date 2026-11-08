@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import gzip
 import json
 import struct
@@ -144,7 +145,12 @@ class SeedASRStream:
         )
         await self.connection.send(_full_request(self.sequence))
         self.sequence += 1
-        await self.connection.recv()
+        first = await asyncio.wait_for(self.connection.recv(), timeout=8)
+        if not isinstance(first, bytes):
+            raise RuntimeError("Invalid ASR handshake")
+        result = _parse_response(first)
+        if result.error:
+            raise RuntimeError("ASR provider rejected the connection")
 
     async def send_audio(self, audio: bytes) -> None:
         if not self.connection:
@@ -159,7 +165,7 @@ class SeedASRStream:
     async def receive(self) -> StreamingASRResult:
         if not self.connection:
             raise RuntimeError("ASR stream is not connected")
-        message = await self.connection.recv()
+        message = await asyncio.wait_for(self.connection.recv(), timeout=45)
         if not isinstance(message, bytes):
             return StreamingASRResult(error=str(message), final=True)
         return _parse_response(message)

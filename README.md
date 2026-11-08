@@ -1,6 +1,6 @@
 # SpeakBuddy
 
-**Demo Site:** [https://sg2fo9jdgkvomc1ncqdqv.apigateway-ap-southeast-1.apigw-byteplus.com/](https://sg2fo9jdgkvomc1ncqdqv.apigateway-ap-southeast-1.apigw-byteplus.com/)
+**Demo Site:** [https://sejf11jm5l5120920cjjc.apigateway-ap-southeast-1.apigw-byteplus.com/](https://sejf11jm5l5120920cjjc.apigateway-ap-southeast-1.apigw-byteplus.com/)
 
 SpeakBuddy is an AI-powered English speaking practice app for secondary-school
 learners. It helps children speak more often, build confidence, and improve
@@ -67,7 +67,7 @@ workflow:
 | **Seed Speech ASR** | Streams topic-practice audio into English text with uploaded-recording fallback and confidence data for coaching and scoring. |
 | **Seed Speech TTS** | Streams Buddy's replies and prompts at learner-selected speaking speeds with six selectable English voices. |
 | **TOS Object Storage** | Stores uploaded recordings and generated TTS audio. Production objects can use a seven-day lifecycle policy for automatic cleanup. |
-| **veFaaS** | Runs the FastAPI application as a cloud function with a minimum of one and a maximum of two instances. |
+| **veFaaS** | Runs the FastAPI application with one reserved instance, a maximum of one instance, and one Uvicorn worker. |
 | **BytePlus API Gateway** | Exposes the veFaaS application through the public HTTPS Demo Site URL and routes browser traffic to the production function. |
 
 API keys, access keys, secrets, and model endpoint IDs are supplied only through
@@ -133,8 +133,9 @@ Set `MOCK_AI=true` for a fully local demo. With `MOCK_AI=false`, configure:
 - `SPEECH_API_KEY`, Seed Speech ASR/TTS URLs, and resource IDs
 - `BYTEPLUS_TTS_VOICE`, which must be one of the verified English Buddy voice
   IDs; the default is Candice (`en_female_candice_emo_v2_mars_bigtts`)
-- BytePlus AK/SK, region, endpoint, and a TOS bucket. Audio uses signed read
-  URLs valid for one hour, so the bucket can remain private.
+- `STORAGE_BACKEND=tos`, BytePlus AK/SK, region, endpoint, and the private
+  TOS bucket `alex-demo`. Signed read URLs stay on the server; browsers use
+  authenticated `/api/audio/...` URLs without TOS signing credentials.
 - `APP_BASE_URL` with the externally accessible HTTPS application URL
 
 The app rejects a production configuration that uses the default session
@@ -145,14 +146,22 @@ seven-day lifecycle policy for the TOS bucket in the BytePlus console.
 
 ## Accounts and Data
 
-Anonymous visitors use a shared guest profile. `/account` can create and switch
+Anonymous visitors receive independent guest profiles through signed HttpOnly
+cookies. Random account identifiers prevent old cookies from matching another
+user after instance replacement. `/account` can create and switch
 password-protected learner accounts. Practice history, generated content,
-scores, XP, trophies, and progress are scoped to the active profile.
+scores, XP, trophies, and progress are scoped to the active profile. Each
+practice window has its own conversation ID, so finishing one window does not
+end another window's conversation.
 
 The current deployment uses instance-local SQLite. This is suitable for the
 single-reserved-instance operating mode, but strict state consistency during
 multi-instance scaling or rolling releases requires an external shared
 database.
+
+The latest deployment uses function `fewtji66`, revision 3. The startup command,
+environment variable checklist, validation results, and state limitations are
+documented in [the deployment notes](DEPLOYMENT_20261108.md).
 
 ## Tests and Quality
 

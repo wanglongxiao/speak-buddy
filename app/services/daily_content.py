@@ -4,6 +4,7 @@ import asyncio
 import json
 from datetime import date, datetime
 
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
@@ -15,14 +16,13 @@ from app.models import (
     Turn,
     User,
 )
+from app.services.concurrency import RELEASE_LOCK, bounded_lock, content_lock
 from app.services.content_releases import (
     cleanup_expired_releases,
     create_release,
     latest_release,
     payload_for_release,
 )
-
-_CONTENT_LOCKS: dict[tuple[asyncio.AbstractEventLoop, int], asyncio.Lock] = {}
 
 
 def current_daily_content(
@@ -114,11 +114,17 @@ def read_aloud_lines(batch: DailyPracticeContent | None) -> list[str]:
 async def _ensure_daily_content_locked(
     session: Session, user: User, force: bool = False
 ) -> DailyPracticeContent:
+    # Global content releases are deliberately shared. Serialize only their
+    # creation; each visitor still gets a separate owned topic batch.
     cleanup_expired_content(session)
     existing = current_daily_content(session, user.id or 0)
     release = latest_release(session, user.default_difficulty)
     if force or not release:
-        release = await create_release(session, user)
+        with bounded_lock(RELEASE_LOCK):
+            session.expire_all()
+            release = latest_release(session, user.default_difficulty)
+            if force or not release:
+                release = await create_release(session, user)
     if existing and existing.source_release_id == release.id:
         return existing
     if existing and _batch_in_use(session, existing):
@@ -173,7 +179,10 @@ async def _ensure_daily_content_locked(
 async def ensure_daily_content(
     session: Session, user: User, force: bool = False
 ) -> DailyPracticeContent:
-    key = (asyncio.get_running_loop(), user.id or 0)
-    lock = _CONTENT_LOCKS.setdefault(key, asyncio.Lock())
-    async with lock:
-        return await _ensure_daily_content_locked(session, user, force)
+    user_id = user.id or 0
+    def work():
+        with content_lock(user_id):
+            session.expire_all()
+            fresh_user = session.get(User, user_id)
+            return asyncio.run(_ensure_daily_content_locked(session, fresh_user, force))
+    return await run_in_threadpool(work)

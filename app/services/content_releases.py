@@ -62,7 +62,10 @@ def _recent_exclusions(session: Session) -> dict[str, list[str]]:
 async def _generate_payload(
     session: Session, user: User, nonce: str
 ) -> tuple[DailyPracticePayload, str]:
-    return await generate_daily_payload(user, nonce, _recent_exclusions(session))
+    avoid = _recent_exclusions(session)
+    snapshot = User(**user.model_dump())
+    session.rollback()
+    return await generate_daily_payload(snapshot, nonce, avoid)
 
 
 async def create_release(session: Session, user: User) -> PracticeContentRelease:

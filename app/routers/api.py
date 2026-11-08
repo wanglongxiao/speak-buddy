@@ -1,8 +1,9 @@
 import asyncio
 import json
 from dataclasses import asdict
-from datetime import date, datetime
+from datetime import date
 
+import httpx
 from fastapi import (
     APIRouter,
     Depends,
@@ -19,7 +20,6 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, col, select
 
-from app.compat import UTC
 from app.config import get_settings
 from app.db import get_session
 from app.models import (
@@ -38,6 +38,7 @@ from app.models.schemas import (
     TTSRequest,
 )
 from app.services.auth import request_user
+from app.services.concurrency import serialized_write
 from app.services.voices import DEFAULT_BUDDY_VOICE, valid_buddy_voice
 from app.skills.asr_skill import transcribe
 from app.skills.asr_skill.streaming import SeedASRStream
@@ -76,16 +77,24 @@ def award_badges(session: Session, user_id: int, codes: list[str]) -> None:
 
 @router.post("/upload-audio")
 async def upload_audio(
+    request: Request,
     audio: UploadFile = File(...),
     rms: float = Form(0),
     duration_ms: int = Form(0),
+    session: Session = Depends(get_session),
 ):
-    content = await audio.read()
+    user = await run_in_threadpool(current_user, request, session)
+    owner_id = user.id
+    session.rollback()
+    content = await audio.read(10 * 1024 * 1024 + 1)
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Audio upload is too large")
     stored = await run_in_threadpool(
         store_audio,
         content,
         audio.filename or "recording.webm",
         audio.content_type or "audio/webm",
+        owner_id,
     )
     loud = await run_in_threadpool(
         assess,
@@ -103,9 +112,57 @@ async def upload_audio(
 
 
 @router.post("/asr")
-async def asr(payload: ASRRequest):
-    result = await transcribe(audio_url(payload.audio_key))
+async def asr(
+    payload: ASRRequest, request: Request, session: Session = Depends(get_session)
+):
+    user = await run_in_threadpool(current_user, request, session)
+    allowed = payload.audio_key.startswith(f"recordings/{user.id}/")
+    session.rollback()
+    if get_settings().tos_enabled and not allowed:
+        raise HTTPException(status_code=404, detail="Audio not found")
+    url = await run_in_threadpool(audio_url, payload.audio_key)
+    result = await transcribe(url)
     return asdict(result)
+
+
+@router.get("/audio/{key:path}")
+async def private_audio(
+    key: str, request: Request, session: Session = Depends(get_session)
+):
+    user = await run_in_threadpool(current_user, request, session)
+    allowed = key.startswith(f"recordings/{user.id}/")
+    session.rollback()
+    if not allowed:
+        raise HTTPException(status_code=404, detail="Audio not found")
+    try:
+        signed_url = await run_in_threadpool(tos_audio_url, key)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Audio not found") from None
+    client = httpx.AsyncClient(timeout=20)
+    try:
+        response = await client.send(
+            client.build_request("GET", signed_url), stream=True
+        )
+        if response.status_code != 200:
+            await response.aclose()
+            await client.aclose()
+            raise HTTPException(status_code=404, detail="Audio not found")
+    except httpx.HTTPError:
+        await client.aclose()
+        raise HTTPException(status_code=503, detail="Audio is unavailable") from None
+
+    async def body():
+        try:
+            async for chunk in response.aiter_bytes():
+                yield chunk
+        finally:
+            await response.aclose()
+            await client.aclose()
+
+    return StreamingResponse(
+        body(), media_type=response.headers.get("content-type", "audio/mpeg"),
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 @router.websocket("/asr/stream")
@@ -113,7 +170,8 @@ async def asr_stream(
     websocket: WebSocket,
     session: Session = Depends(get_session),
 ):
-    request_user(websocket, session)
+    await run_in_threadpool(request_user, websocket, session)
+    session.rollback()
     await websocket.accept()
     if not get_settings().speech_enabled:
         await websocket.send_json(
@@ -123,6 +181,7 @@ async def asr_stream(
         return
 
     provider = SeedASRStream()
+    tasks = set()
     try:
         await provider.connect()
         await websocket.send_json({"type": "ready"})
@@ -163,6 +222,7 @@ async def asr_stream(
 
         audio_task = asyncio.create_task(send_audio())
         result_task = asyncio.create_task(send_results())
+        tasks = {audio_task, result_task}
         done, _ = await asyncio.wait(
             {audio_task, result_task},
             return_when=asyncio.FIRST_COMPLETED,
@@ -181,6 +241,10 @@ async def asr_stream(
         except RuntimeError:
             pass
     finally:
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
         await provider.close()
 
 
@@ -196,11 +260,13 @@ async def tts(
     request: Request,
     session: Session = Depends(get_session),
 ):
-    user = current_user(request, session)
+    user = await run_in_threadpool(current_user, request, session)
     voice = payload.voice or user_voice(user)
+    owner_id = user.id
+    session.rollback()
     if not valid_buddy_voice(voice):
         raise HTTPException(status_code=422, detail="Unsupported Buddy voice")
-    return {"url": await synthesize(payload.text, payload.speed, voice)}
+    return {"url": await synthesize(payload.text, payload.speed, voice, owner_id)}
 
 
 @router.get("/tts/stream")
@@ -211,8 +277,9 @@ async def tts_stream(
     voice: str = "",
     session: Session = Depends(get_session),
 ):
-    user = current_user(request, session)
+    user = await run_in_threadpool(current_user, request, session)
     selected = voice or user_voice(user)
+    session.rollback()
     if not valid_buddy_voice(selected):
         raise HTTPException(status_code=422, detail="Unsupported Buddy voice")
     return StreamingResponse(
@@ -228,36 +295,57 @@ async def coach_turn(
     request: Request,
     session: Session = Depends(get_session),
 ):
-    user = current_user(request, session)
-    topic = session.get(Topic, payload.topic_id)
-    if not topic or not (topic.is_system or topic.owner_user_id == user.id):
-        raise HTTPException(status_code=404, detail="Topic not found")
+    def context():
+        user = current_user(request, session)
+        topic = session.get(Topic, payload.topic_id)
+        if not topic or not (topic.is_system or topic.owner_user_id == user.id):
+            raise HTTPException(status_code=404, detail="Topic not found")
+        values = (user.id, topic.id, user.default_difficulty, user.default_speed)
+        session.rollback()
+        return values
+    user_id, topic_id, difficulty, speed = await run_in_threadpool(context)
     result = await coach(
         payload.question,
         payload.transcript,
         payload.asr_confidence,
         payload.history,
-        user.default_difficulty,
+        difficulty,
     )
+    return await run_in_threadpool(
+        save_coach_turn, session, payload, result,
+        user_id, topic_id, difficulty, speed,
+    )
+
+
+@serialized_write
+def save_coach_turn(session, payload, result, user_id, topic_id, difficulty, speed):
+    user = session.get(User, user_id)
+    session.refresh(user)
+    if payload.conversation_id:
+        ended = session.exec(select(PracticeSession).where(
+            PracticeSession.user_id == user_id,
+            PracticeSession.conversation_id == payload.conversation_id,
+            PracticeSession.finished_at.is_not(None),
+        )).first()
+        if ended:
+            raise HTTPException(status_code=409, detail="This conversation has ended")
     unfinished = session.exec(
         select(PracticeSession)
         .where(
-            PracticeSession.user_id == user.id,
+            PracticeSession.user_id == user_id,
             PracticeSession.finished_at.is_(None),
+            PracticeSession.conversation_id == payload.conversation_id,
         )
         .order_by(col(PracticeSession.started_at).desc())
     ).all()
-    active = next((item for item in unfinished if item.topic_id == topic.id), None)
-    for practice in unfinished:
-        if practice is not active:
-            practice.finished_at = datetime.now(UTC)
-            session.add(practice)
+    active = next((item for item in unfinished if item.topic_id == topic_id), None)
     if not active:
         active = PracticeSession(
             user_id=user.id or 1,
-            topic_id=topic.id,
-            difficulty=user.default_difficulty,
-            speed=user.default_speed,
+            topic_id=topic_id,
+            conversation_id=payload.conversation_id,
+            difficulty=difficulty,
+            speed=speed,
         )
         session.add(active)
         session.commit()
@@ -267,7 +355,7 @@ async def coach_turn(
     active.total_xp += reward.xp
     turn = Turn(
         session_id=active.id or 1,
-        topic_id=topic.id or 1,
+        topic_id=topic_id,
         question=payload.question,
         transcript=payload.transcript,
         confidence=payload.asr_confidence,
@@ -289,6 +377,7 @@ def pronunciation(payload: PronunciationRequest):
 
 
 @router.post("/loud/record")
+@serialized_write
 def record_loud(
     payload: LoudRecordRequest,
     request: Request,

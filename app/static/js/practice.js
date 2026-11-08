@@ -14,6 +14,7 @@ const I = window.i18n;
 window.practiceApp = (topicId, questions, speed, buddyVoice) => ({
   ...recordableState(I.microphone_error, "turn"),
   topicId,
+  conversationId: crypto.randomUUID(),
   questions,
   speed,
   buddyVoice,
@@ -138,6 +139,7 @@ window.practiceApp = (topicId, questions, speed, buddyVoice) => ({
     try {
       this.result = await postJSON("/api/coach", {
         topic_id: this.topicId,
+        conversation_id: this.conversationId,
         question: this.question,
         transcript: this.transcript,
         history: this.history,
@@ -192,7 +194,8 @@ window.practiceApp = (topicId, questions, speed, buddyVoice) => ({
   async completeQuest() {
     await this.voice.shutdown();
     const reward = await postJSON("/api/quest/complete", {
-      topic_id: this.topicId
+      topic_id: this.topicId,
+      conversation_id: this.conversationId
     });
     this.xp += reward.xp;
     this.finalEvaluation = reward.evaluation;
@@ -206,7 +209,7 @@ window.practiceApp = (topicId, questions, speed, buddyVoice) => ({
     this.playbackTurn += 1;
     stopSpeaking();
     await this.voice.shutdown();
-    await postJSON("/api/quest/end", { topic_id: this.topicId });
+    await postJSON("/api/quest/end", { topic_id: this.topicId, conversation_id: this.conversationId });
     location.href = "/";
   },
   destroy() {

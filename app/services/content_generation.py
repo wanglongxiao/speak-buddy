@@ -115,9 +115,12 @@ async def generate_daily_payload(
     client = AsyncOpenAI(
         api_key=settings.modelark_api_key,
         base_url=settings.modelark_base_url,
+        timeout=65,
+        max_retries=0,
     )
     levels = list(PRACTICE_COUNTS)
-    results = await asyncio.gather(
+    try:
+        results = await asyncio.gather(
         *[
             _generate_level(
                 client,
@@ -128,7 +131,9 @@ async def generate_daily_payload(
             )
             for difficulty in levels
         ]
-    )
+        )
+    finally:
+        await client.close()
     topics: list[DailyTopic] = []
     lines: list[DailyReadAloud] = []
     for difficulty, (payload, _) in zip(levels, results):  # noqa: B905 - Python 3.9
